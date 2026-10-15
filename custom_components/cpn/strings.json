@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "CPN",
+        "description": "Dodać integrację z maksymalnymi cenami paliw z gov.pl?"
+      }
+    },
+    "abort": {
+      "already_configured": "Integracja jest już skonfigurowana"
+    }
+  }
+}

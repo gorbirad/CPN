@@ -1,0 +1,11 @@
+{
+  "domain": "cpn",
+  "name": "CPN - maksymalne ceny paliw",
+  "codeowners": ["@gorbirad"],
+  "config_flow": true,
+  "documentation": "https://github.com/gorbirad/CPN",
+  "issue_tracker": "https://github.com/gorbirad/CPN/issues",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "version": "1.0.0"
+}

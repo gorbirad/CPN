@@ -1,0 +1,13 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "CPN",
+        "description": "Add the maximum fuel prices integration (gov.pl)?"
+      }
+    },
+    "abort": {
+      "already_configured": "Integration is already configured"
+    }
+  }
+}
