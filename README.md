@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.png" alt="CPN logo" width="200">
+</p>
+
 # CPN – maksymalne ceny detaliczne paliw
 
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
