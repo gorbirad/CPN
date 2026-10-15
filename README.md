@@ -6,6 +6,7 @@
 
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 [![Validate](https://github.com/gorbirad/CPN/actions/workflows/validate.yaml/badge.svg)](https://github.com/gorbirad/CPN/actions/workflows/validate.yaml)
+[![Autor](https://img.shields.io/badge/autor-gorbirad-blue?logo=github)](https://github.com/gorbirad)
 
 Integracja Home Assistant. Co 15 minut sprawdza stronę
 [gov.pl/web/energia/wiadomosci](https://www.gov.pl/web/energia/wiadomosci), znajduje najnowszy
@@ -18,6 +19,13 @@ artykuł „Maksymalna cena detaliczna paliw…” i tworzy sensory (PLN/l):
 | `sensor.cpn_on` | Olej napędowy |
 
 Atrybuty każdego sensora: `title`, `url`, `summary` (artykuł, z którego pochodzą ceny).
+
+### Historia cen
+
+Przy pierwszym dodaniu integracji pobierane są ceny z ostatnich 7 dni (a jeśli ich brak – z 3 ostatnich
+artykułów) i zapisywane jako statystyki długoterminowe (jeden punkt na dobę, od 00:00). Dzięki temu
+od razu można zobaczyć zmiany na wykresie, np. kartą `statistics-graph`. Dane pochodzą z pierwszej strony
+listy wiadomości gov.pl.
 
 ## Instalacja
 
@@ -65,6 +73,7 @@ CPN/
 │       ├── config_flow.py       # prosty config flow (bez parametrów)
 │       ├── const.py             # stałe: URL, interwał, lista paliw
 │       ├── coordinator.py       # pobieranie i parsowanie strony gov.pl
+│       ├── history.py           # import historii cen (statystyki)
 │       ├── manifest.json        # metadane integracji
 │       ├── sensor.py            # sensory cen paliw
 │       ├── strings.json
