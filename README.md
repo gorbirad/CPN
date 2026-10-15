@@ -14,9 +14,9 @@ artykuł „Maksymalna cena detaliczna paliw…” i tworzy sensory (PLN/l):
 
 | Encja | Opis |
 |-------|------|
-| `sensor.cpn_pb95` | Benzyna 95 |
-| `sensor.cpn_pb98` | Benzyna 98 |
-| `sensor.cpn_on` | Olej napędowy |
+| `sensor.benzyna_95` | Benzyna 95 |
+| `sensor.benzyna_98` | Benzyna 98 |
+| `sensor.olej_napedowy` | Olej napędowy |
 
 Atrybuty każdego sensora: `title`, `url`, `summary` (artykuł, z którego pochodzą ceny).
 
@@ -71,13 +71,13 @@ Bez card-mod karta wyświetli się, ale bez podświetlenia i dodatkowego opisu.
 
 ```yaml
 type: entity
-entity: sensor.cpn_pb95
+entity: sensor.benzyna_95
 name: Benzyna 95
 icon: mdi:gas-station
 card_mod:
   style: |
     ha-card {
-      {% set last = states.sensor.cpn_pb95.last_changed %}
+      {% set last = states.sensor.benzyna_95.last_changed %}
       {% if (now() - last).total_seconds() < 3600 %}
         background: rgba(255, 200, 0, 0.3);
         border-radius: 12px;
@@ -88,7 +88,7 @@ card_mod:
       position: relative;
     }
     .value:after {
-      content: "Ostatnia zmiana: {{ states.sensor.cpn_pb95.last_changed.strftime('%H:%M:%S') }}";
+      content: "Ostatnia zmiana: {{ states.sensor.benzyna_95.last_changed.strftime('%H:%M:%S') }}";
       display: block;
       font-size: 12px;
       color: var(--secondary-text-color);
@@ -96,16 +96,16 @@ card_mod:
     }
 ```
 
-Aby uzyskać kartę dla innego paliwa, zamień `sensor.cpn_pb95` na `sensor.cpn_pb98` lub `sensor.cpn_on`.
+Aby uzyskać kartę dla innego paliwa, zamień `sensor.benzyna_95` na `sensor.benzyna_98` lub `sensor.olej_napedowy`.
 
 Wykres z historią cen (7 dni):
 
 ```yaml
 type: statistics-graph
 entities:
-  - sensor.cpn_pb95
-  - sensor.cpn_pb98
-  - sensor.cpn_on
+  - sensor.benzyna_95
+  - sensor.benzyna_98
+  - sensor.olej_napedowy
 stat_types:
   - mean
 days_to_show: 7
