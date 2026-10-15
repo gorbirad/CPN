@@ -23,7 +23,6 @@ class CpnSensor(CoordinatorEntity, SensorEntity):
         self._key = key
         self._attr_name = name
         self._attr_unique_id = f"{DOMAIN}_{key}"
-        self._attr_suggested_object_id = f"cpn_{key}"
 
     @property
     def native_value(self):
