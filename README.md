@@ -60,6 +60,58 @@ listy wiadomości gov.pl.
 1. **Ustawienia → Urządzenia i usługi → Dodaj integrację**.
 2. Wyszukaj **CPN** i zatwierdź.
 
+## Przykładowa karta
+
+Karta pokazuje cenę benzyny 95, podświetla się na żółto, gdy cena zmieniła się w ciągu ostatniej godziny,
+i wyświetla czas ostatniej zmiany.
+
+**Wymagania:** karta korzysta z [card-mod](https://github.com/thomasloven/lovelace-card-mod)
+(instalacja przez HACS → Frontend → wyszukaj „card-mod”, a następnie odśwież przeglądarkę).
+Bez card-mod karta wyświetli się, ale bez podświetlenia i dodatkowego opisu.
+
+```yaml
+type: entity
+entity: sensor.cpn_pb95
+name: Benzyna 95
+icon: mdi:gas-station
+card_mod:
+  style: |
+    ha-card {
+      {% set last = states.sensor.cpn_pb95.last_changed %}
+      {% if (now() - last).total_seconds() < 3600 %}
+        background: rgba(255, 200, 0, 0.3);
+        border-radius: 12px;
+      {% endif %}
+      padding-bottom: 12px;
+    }
+    .value {
+      position: relative;
+    }
+    .value:after {
+      content: "Ostatnia zmiana: {{ states.sensor.cpn_pb95.last_changed.strftime('%H:%M:%S') }}";
+      display: block;
+      font-size: 12px;
+      color: var(--secondary-text-color);
+      margin-top: 4px;
+    }
+```
+
+Aby uzyskać kartę dla innego paliwa, zamień `sensor.cpn_pb95` na `sensor.cpn_pb98` lub `sensor.cpn_on`.
+
+Wykres z historią cen (7 dni):
+
+```yaml
+type: statistics-graph
+entities:
+  - sensor.cpn_pb95
+  - sensor.cpn_pb98
+  - sensor.cpn_on
+stat_types:
+  - mean
+days_to_show: 7
+period: day
+```
+
 ## Struktura projektu
 
 ```text
