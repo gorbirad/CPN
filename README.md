@@ -8,7 +8,7 @@
 [![Validate](https://github.com/gorbirad/CPN/actions/workflows/validate.yaml/badge.svg)](https://github.com/gorbirad/CPN/actions/workflows/validate.yaml)
 [![Autor](https://img.shields.io/badge/autor-gorbirad-blue?logo=github)](https://github.com/gorbirad)
 
-Integracja Home Assistant. Co 15 minut (o pełnych kwadransach +5 min: :05, :20, :35, :50, więc cenę z godz. 12:00 pobiera ok. 12:05) sprawdza stronę
+Integracja Home Assistant. Co 15 minut (:05, :20, :35, :50) sprawdza stronę
 [gov.pl/web/energia/wiadomosci](https://www.gov.pl/web/energia/wiadomosci), znajduje najnowszy
 artykuł „Maksymalna cena detaliczna paliw…” i tworzy sensory (PLN/l):
 
@@ -19,7 +19,9 @@ artykuł „Maksymalna cena detaliczna paliw…” i tworzy sensory (PLN/l):
 | `sensor.olej_napedowy` | Olej napędowy |
 | `sensor.cena_obowiazuje_od` | Data, od której obowiązują aktualne ceny |
 
-Każdy sensor paliwa ma też atrybut `valid_from` (data obowiązywania, `RRRR-MM-DD`).
+Każdy sensor paliwa ma też atrybut `valid_from` (data obowiązywania, `RRRR-MM-DD`). Data pochodzi z adresu
+artykułu; dla cen obowiązujących przez kilka dni (np. weekend „17-19 października”) jest to pierwszy dzień.
+Ministerstwo publikuje ceny zwykle ok. godz. 12:00–12:30, więc nowa cena może pojawić się z takim opóźnieniem.
 
 Atrybuty każdego sensora: `title`, `url`, `summary` (artykuł, z którego pochodzą ceny).
 

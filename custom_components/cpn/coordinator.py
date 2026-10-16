@@ -26,7 +26,9 @@ PRICE_RES = {
     "on": re.compile(r"olej\s*napędowy\s*[-–—:]\s*(\d+[.,]\d+)", re.I),
 }
 TAG_RE = re.compile(r"<[^>]+>")
-DATE_RE = re.compile(r"obowiazujaca-(\d{1,2})-([a-z]+)-(\d{4})")
+DATE_RE = re.compile(
+    r"obowiazujaca-(?:w-dniach-)?(\d{1,2})(?:-\d{1,2})?-([a-z]+)(?:-\d{1,2}-[a-z]+)?-(\d{4})"
+)
 MONTHS = {
     "stycznia": 1, "lutego": 2, "marca": 3, "kwietnia": 4, "maja": 5,
     "czerwca": 6, "lipca": 7, "sierpnia": 8, "wrzesnia": 9,
@@ -48,7 +50,7 @@ def _parse_date(url: str) -> date | None:
 
 def select_history(articles: list[dict], today: date) -> list[dict]:
     """Articles from the last week; if none, the last 3 ones (oldest first)."""
-    dated = [a for a in articles if a.get("date")]
+    dated = [a for a in articles if a.get("date") and a["date"] <= today]
     week = [a for a in dated if (today - a["date"]).days <= HISTORY_DAYS]
     chosen = week or dated[:HISTORY_MIN_ITEMS]
     return sorted(chosen, key=lambda a: a["date"])
