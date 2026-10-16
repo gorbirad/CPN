@@ -19,7 +19,7 @@ card_mod:
     }
 
     .value:after {
-      content: "Ostatnia zmiana: {{ states.sensor.benzyna_95.last_changed.strftime('%H:%M:%S') }}";
+      content: "Obowiązuje od: {{ as_datetime(state_attr('sensor.benzyna_95', 'valid_from')).strftime('%d.%m.%Y') }}";
       display: block;
       font-size: 12px;
       color: var(--secondary-text-color);

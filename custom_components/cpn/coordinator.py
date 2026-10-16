@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import BASE_URL, DOMAIN, NEWS_URL, SCAN_INTERVAL
+from .const import BASE_URL, DOMAIN, NEWS_URL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -87,7 +87,7 @@ class CpnCoordinator(DataUpdateCoordinator[dict]):
     """Poll gov.pl for the latest maximum fuel prices."""
 
     def __init__(self, hass: HomeAssistant) -> None:
-        super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=SCAN_INTERVAL)
+        super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
 
     async def _async_update_data(self) -> dict:
         session = async_get_clientsession(self.hass)

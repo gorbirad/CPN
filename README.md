@@ -8,7 +8,7 @@
 [![Validate](https://github.com/gorbirad/CPN/actions/workflows/validate.yaml/badge.svg)](https://github.com/gorbirad/CPN/actions/workflows/validate.yaml)
 [![Autor](https://img.shields.io/badge/autor-gorbirad-blue?logo=github)](https://github.com/gorbirad)
 
-Integracja Home Assistant. Co 15 minut sprawdza stronę
+Integracja Home Assistant. Co 15 minut (o pełnych kwadransach +5 min: :05, :20, :35, :50, więc cenę z godz. 12:00 pobiera ok. 12:05) sprawdza stronę
 [gov.pl/web/energia/wiadomosci](https://www.gov.pl/web/energia/wiadomosci), znajduje najnowszy
 artykuł „Maksymalna cena detaliczna paliw…” i tworzy sensory (PLN/l):
 
@@ -17,6 +17,9 @@ artykuł „Maksymalna cena detaliczna paliw…” i tworzy sensory (PLN/l):
 | `sensor.benzyna_95` | Benzyna 95 |
 | `sensor.benzyna_98` | Benzyna 98 |
 | `sensor.olej_napedowy` | Olej napędowy |
+| `sensor.cena_obowiazuje_od` | Data, od której obowiązują aktualne ceny |
+
+Każdy sensor paliwa ma też atrybut `valid_from` (data obowiązywania, `RRRR-MM-DD`).
 
 Atrybuty każdego sensora: `title`, `url`, `summary` (artykuł, z którego pochodzą ceny).
 
@@ -63,7 +66,7 @@ listy wiadomości gov.pl.
 ## Przykładowa karta
 
 Karta pokazuje cenę benzyny 95, podświetla się na żółto, gdy cena zmieniła się w ciągu ostatniej godziny,
-i wyświetla czas ostatniej zmiany.
+i wyświetla datę, od której cena obowiązuje.
 
 **Wymagania:** karta korzysta z [card-mod](https://github.com/thomasloven/lovelace-card-mod)
 (instalacja przez HACS → Frontend → wyszukaj „card-mod”, a następnie odśwież przeglądarkę).
@@ -88,7 +91,7 @@ card_mod:
       position: relative;
     }
     .value:after {
-      content: "Ostatnia zmiana: {{ states.sensor.benzyna_95.last_changed.strftime('%H:%M:%S') }}";
+      content: "Obowiązuje od: {{ as_datetime(state_attr('sensor.benzyna_95', 'valid_from')).strftime('%d.%m.%Y') }}";
       display: block;
       font-size: 12px;
       color: var(--secondary-text-color);
