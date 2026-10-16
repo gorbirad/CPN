@@ -1,0 +1,21 @@
+type: entity
+entity: sensor.benzyna_95_obecna
+name: Benzyna 95 – obecna
+icon: mdi:gas-station
+card_mod:
+  style: |
+    ha-card {
+      padding-bottom: 12px;
+    }
+
+    .value {
+      position: relative;
+    }
+
+    .value:after {
+      content: "Obowiązuje od: {{ as_datetime(state_attr('sensor.benzyna_95_obecna', 'valid_from')).strftime('%d.%m.%Y') }}";
+      display: block;
+      font-size: 12px;
+      color: var(--secondary-text-color);
+      margin-top: 4px;
+    }

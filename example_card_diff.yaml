@@ -1,0 +1,26 @@
+type: entity
+entity: sensor.benzyna_95_obecna
+attribute: change_next
+name: Benzyna 95 – zmiana (nowa − obecna)
+unit: zł
+icon: mdi:swap-vertical
+card_mod:
+  style: |
+    ha-card {
+      {% set d = state_attr('sensor.benzyna_95_obecna', 'change_next') %}
+      {% if d is not none and d | float(0) < 0 %}
+        background: rgba(76, 175, 80, 0.25);
+      {% elif d is not none and d | float(0) > 0 %}
+        background: rgba(244, 67, 54, 0.25);
+      {% endif %}
+      border-radius: 12px;
+      padding-bottom: 12px;
+    }
+
+    .value:after {
+      content: "{{ state_attr('sensor.benzyna_95_obecna', 'next_price') }} zł od {{ as_datetime(state_attr('sensor.benzyna_95_obecna', 'next_valid_from')).strftime('%d.%m.%Y') if state_attr('sensor.benzyna_95_obecna', 'next_valid_from') else '–' }}";
+      display: block;
+      font-size: 12px;
+      color: var(--secondary-text-color);
+      margin-top: 4px;
+    }

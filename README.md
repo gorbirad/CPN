@@ -71,10 +71,15 @@ listy wiadomości gov.pl.
 1. **Ustawienia → Urządzenia i usługi → Dodaj integrację**.
 2. Wyszukaj **CPN** i zatwierdź.
 
-## Przykładowa karta
+## Przykładowe karty (card-mod)
 
-Karta pokazuje cenę benzyny 95, podświetla się na żółto, gdy cena zmieniła się w ciągu ostatniej godziny,
-i wyświetla datę, od której cena obowiązuje.
+Trzy podobne karty dla benzyny 95: **nowa cena**, **cena obecna** i **różnica**. Każda jest też w osobnym
+pliku w repozytorium. Dla innych paliw zamień `benzyna_95` na `benzyna_98` lub `olej_napedowy`.
+
+### Karta 1: nowa (najnowsza opublikowana) cena
+
+Plik: [example_card.yaml](example_card.yaml). Podświetla się na żółto, gdy cena zmieniła się w ciągu
+ostatniej godziny, i wyświetla datę, od której cena obowiązuje.
 
 **Wymagania:** karta korzysta z [card-mod](https://github.com/thomasloven/lovelace-card-mod)
 (instalacja przez HACS → Frontend → wyszukaj „card-mod”, a następnie odśwież przeglądarkę).
