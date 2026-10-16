@@ -48,6 +48,18 @@ def _parse_date(url: str) -> date | None:
         return None
 
 
+def split_current(articles: list[dict], today: date) -> tuple[dict | None, dict | None, dict | None]:
+    """Return (current, next, previous) articles relative to today."""
+    dated = sorted((a for a in articles if a.get("date")), key=lambda a: a["date"], reverse=True)
+    current_idx = next((i for i, a in enumerate(dated) if a["date"] <= today), None)
+    if current_idx is None:
+        return None, (dated[-1] if dated else None), None
+    future = dated[:current_idx]
+    nxt = future[-1] if future else None
+    prev = dated[current_idx + 1] if current_idx + 1 < len(dated) else None
+    return dated[current_idx], nxt, prev
+
+
 def select_history(articles: list[dict], today: date) -> list[dict]:
     """Articles from the last week; if none, the last 3 ones (oldest first)."""
     dated = [a for a in articles if a.get("date") and a["date"] <= today]

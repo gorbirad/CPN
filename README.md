@@ -18,6 +18,12 @@ artykuł „Maksymalna cena detaliczna paliw…” i tworzy sensory (PLN/l):
 | `sensor.benzyna_98` | Benzyna 98 |
 | `sensor.olej_napedowy` | Olej napędowy |
 | `sensor.cena_obowiazuje_od` | Data, od której obowiązują aktualne ceny |
+| `sensor.benzyna_95_obecna` | Cena obowiązująca **dziś** (analogicznie `benzyna_98_obecna`, `olej_napedowy_obecna`) |
+
+Sensory „obecna” mają atrybuty: `valid_from`, `next_price`, `next_valid_from`, `change_next` (nowa − obecna),
+`previous_price`, `change_previous` (obecna − poprzednia). O północy przełączają się same na cenę obowiązującą
+od danego dnia, a pozostałe sensory (`benzyna_95` itd.) pokazują zawsze **najnowszą opublikowaną** cenę
+(często już na jutro).
 
 Każdy sensor paliwa ma też atrybut `valid_from` (data obowiązywania, `RRRR-MM-DD`). Data pochodzi z adresu
 artykułu; dla cen obowiązujących przez kilka dni (np. weekend „17-19 października”) jest to pierwszy dzień.
@@ -102,6 +108,33 @@ card_mod:
 ```
 
 Aby uzyskać kartę dla innego paliwa, zamień `sensor.benzyna_95` na `sensor.benzyna_98` lub `sensor.olej_napedowy`.
+
+## Przykładowa karta: obecna cena i różnica
+
+Jedna karta Markdown (nie wymaga card-mod) z tabelą: cena obecna, nowa (od jutra) i zmiana. Plik:
+[example_card_current.yaml](example_card_current.yaml).
+
+```yaml
+type: markdown
+title: Ceny paliw (max)
+content: |
+  {% set fuels = [('Benzyna 95', 'sensor.benzyna_95_obecna'),
+                  ('Benzyna 98', 'sensor.benzyna_98_obecna'),
+                  ('Olej napędowy', 'sensor.olej_napedowy_obecna')] %}
+  {% set e = fuels[0][1] %}
+  Obecna cena od **{{ state_attr(e, 'valid_from') }}**
+  {%- if state_attr(e, 'next_valid_from') %}, nowa od **{{ state_attr(e, 'next_valid_from') }}**{% endif %}
+
+  | Paliwo | Obecnie | Nowa | Zmiana |
+  |---|---|---|---|
+  {% for name, ent in fuels -%}
+  {% set now_p = states(ent) | float(none) -%}
+  {% set nxt = state_attr(ent, 'next_price') -%}
+  {% set d = state_attr(ent, 'change_next') -%}
+  {% set dp = state_attr(ent, 'change_previous') -%}
+  | {{ name }} | **{{ '%.2f' | format(now_p) if now_p is not none else '–' }} zł** | {{ '%.2f' | format(nxt) ~ ' zł' if nxt is not none else '–' }} | {% if d is not none %}{{ '🔺 +' if d > 0 else '🔻 ' if d < 0 else '' }}{{ '%.2f' | format(d) }} zł (od jutra){% elif dp is not none %}{{ '🔺 +' if dp > 0 else '🔻 ' if dp < 0 else '' }}{{ '%.2f' | format(dp) }} zł (vs poprzednia){% else %}–{% endif %} |
+  {% endfor %}
+```
 
 Wykres z historią cen (7 dni):
 

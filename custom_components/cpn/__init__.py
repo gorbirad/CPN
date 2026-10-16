@@ -17,9 +17,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await coordinator.async_config_entry_first_refresh()
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
+    async def _midnight_update(_now) -> None:
+        # Po północy "obecna" cena zmienia się bez nowego artykułu
+        coordinator.async_update_listeners()
+
     async def _scheduled_refresh(_now) -> None:
         await coordinator.async_request_refresh()
 
+    entry.async_on_unload(
+        async_track_time_change(hass, _midnight_update, hour=0, minute=0, second=5)
+    )
     entry.async_on_unload(
         async_track_time_change(
             hass, _scheduled_refresh, minute=REFRESH_MINUTES, second=0
