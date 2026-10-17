@@ -7,10 +7,15 @@
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 [![Validate](https://github.com/gorbirad/CPN/actions/workflows/validate.yaml/badge.svg)](https://github.com/gorbirad/CPN/actions/workflows/validate.yaml)
 [![Autor](https://img.shields.io/badge/autor-gorbirad-blue?logo=github)](https://github.com/gorbirad)
+[![Sponsor](https://img.shields.io/badge/Sponsor-gorbirad-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/gorbirad)
+[![Latest release](https://img.shields.io/github/v/release/gorbirad/CPN)](https://github.com/gorbirad/CPN/releases/latest)
 
 Integracja Home Assistant. Co 15 minut (:05, :20, :35, :50) sprawdza stronę
 [gov.pl/web/energia/wiadomosci](https://www.gov.pl/web/energia/wiadomosci), znajduje najnowszy
 artykuł „Maksymalna cena detaliczna paliw…” i tworzy sensory (PLN/l):
+
+Pełna historia zmian znajduje się w [CHANGELOG.md](CHANGELOG.md); opisy wydań są też na
+[GitHub Releases](https://github.com/gorbirad/CPN/releases).
 
 | Encja | Opis |
 |-------|------|
@@ -114,7 +119,70 @@ card_mod:
 
 Aby uzyskać kartę dla innego paliwa, zamień `sensor.benzyna_95` na `sensor.benzyna_98` lub `sensor.olej_napedowy`.
 
-## Przykładowa karta: obecna cena i różnica
+### Karta 2: cena obecna (obowiązująca dziś)
+
+Plik: [example_card_current_price.yaml](example_card_current_price.yaml).
+
+```yaml
+type: entity
+entity: sensor.benzyna_95_obecna
+name: Benzyna 95 – obecna
+icon: mdi:gas-station
+card_mod:
+  style: |
+    ha-card {
+      padding-bottom: 12px;
+    }
+
+    .value {
+      position: relative;
+    }
+
+    .value:after {
+      content: "Obowiązuje od: {{ as_datetime(state_attr('sensor.benzyna_95_obecna', 'valid_from')).strftime('%d.%m.%Y') }}";
+      display: block;
+      font-size: 12px;
+      color: var(--secondary-text-color);
+      margin-top: 4px;
+    }
+```
+
+### Karta 3: różnica cen (nowa − obecna)
+
+Plik: [example_card_diff.yaml](example_card_diff.yaml). Zielone tło oznacza obniżkę, czerwone podwyżkę;
+pod wartością widać nową cenę i datę od kiedy obowiązuje. Gdy nowa cena nie jest jeszcze znana, karta
+pokazuje „unknown”.
+
+```yaml
+type: entity
+entity: sensor.benzyna_95_obecna
+attribute: change_next
+name: Benzyna 95 – zmiana (nowa − obecna)
+unit: zł
+icon: mdi:swap-vertical
+card_mod:
+  style: |
+    ha-card {
+      {% set d = state_attr('sensor.benzyna_95_obecna', 'change_next') %}
+      {% if d is not none and d | float(0) < 0 %}
+        background: rgba(76, 175, 80, 0.25);
+      {% elif d is not none and d | float(0) > 0 %}
+        background: rgba(244, 67, 54, 0.25);
+      {% endif %}
+      border-radius: 12px;
+      padding-bottom: 12px;
+    }
+
+    .value:after {
+      content: "{{ state_attr('sensor.benzyna_95_obecna', 'next_price') }} zł od {{ as_datetime(state_attr('sensor.benzyna_95_obecna', 'next_valid_from')).strftime('%d.%m.%Y') if state_attr('sensor.benzyna_95_obecna', 'next_valid_from') else '–' }}";
+      display: block;
+      font-size: 12px;
+      color: var(--secondary-text-color);
+      margin-top: 4px;
+    }
+```
+
+### Karta zbiorcza (Markdown, bez card-mod)
 
 Jedna karta Markdown (nie wymaga card-mod) z tabelą: cena obecna, nowa (od jutra) i zmiana. Plik:
 [example_card_current.yaml](example_card_current.yaml).
