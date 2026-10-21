@@ -20,10 +20,12 @@ Pełna historia zmian znajduje się w [CHANGELOG.md](CHANGELOG.md); opisy wydań
 | Encja | Opis |
 |-------|------|
 | `sensor.benzyna_95` | Benzyna 95 |
+| `sensor.benzyna_95_obecna` | Cena benzyny 95 obowiązująca **dziś** |
 | `sensor.benzyna_98` | Benzyna 98 |
+| `sensor.benzyna_98_obecna` | Cena benzyny 98 obowiązująca **dziś** |
 | `sensor.olej_napedowy` | Olej napędowy |
+| `sensor.olej_napedowy_obecna` | Cena oleju napędowego obowiązująca **dziś** |
 | `sensor.cena_obowiazuje_od` | Data, od której obowiązują aktualne ceny |
-| `sensor.benzyna_95_obecna` | Cena obowiązująca **dziś** (analogicznie `benzyna_98_obecna`, `olej_napedowy_obecna`) |
 
 Sensory „obecna” mają atrybuty: `valid_from`, `next_price`, `next_valid_from`, `change_next` (nowa − obecna),
 `previous_price`, `change_previous` (obecna − poprzednia). O północy przełączają się same na cenę obowiązującą
