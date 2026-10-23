@@ -2,45 +2,46 @@
   <img src="logo.png" alt="CPN logo" width="200">
 </p>
 
-# CPN – maksymalne ceny detaliczne paliw
+[PL](README.pl.md) | [**EN**](README.md)
+
+# CPN — Maximum Retail Fuel Prices
 
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 [![Validate](https://github.com/gorbirad/CPN/actions/workflows/validate.yaml/badge.svg)](https://github.com/gorbirad/CPN/actions/workflows/validate.yaml)
-[![Autor](https://img.shields.io/badge/autor-gorbirad-blue?logo=github)](https://github.com/gorbirad)
+[![Author](https://img.shields.io/badge/author-gorbirad-blue?logo=github)](https://github.com/gorbirad)
 [![Sponsor](https://img.shields.io/badge/Sponsor-gorbirad-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/gorbirad)
 [![Latest release](https://img.shields.io/github/v/release/gorbirad/CPN)](https://github.com/gorbirad/CPN/releases/latest)
 
-Integracja Home Assistant pokazująca maksymalne ceny paliw (PLN/l). Dane publikuje centralny scraper
-z GitHub Actions; instancje Home Assistant pobierają wyłącznie JSON z GitHub Pages i nigdy nie łączą
-się bezpośrednio z gov.pl.
+Home Assistant integration for Poland's maximum retail fuel prices (PLN/l). A central GitHub Actions
+scraper publishes data through GitHub Pages. Home Assistant instances only download the JSON feed;
+they never connect directly to gov.pl.
 
-Pełna historia zmian znajduje się w [CHANGELOG.md](CHANGELOG.md); opisy wydań są też na
-[GitHub Releases](https://github.com/gorbirad/CPN/releases).
+The full change history is in [CHANGELOG.md](CHANGELOG.md); published release notes are also available
+on [GitHub Releases](https://github.com/gorbirad/CPN/releases).
 
-## Architektura
+## Architecture
 
 ```text
-gov.pl → GitHub Actions (scraper) → news.json → GitHub Pages → integracje CPN w HA
+gov.pl → GitHub Actions (scraper) → news.json → GitHub Pages → CPN integrations in Home Assistant
 ```
 
-Jedno centralne zadanie sprawdza stronę wiadomości gov.pl tylko w wyznaczonym oknie publikacji.
-Po wykryciu nowego artykułu z cenami publikuje JSON. Home Assistant nie zna adresu strony gov.pl
-i nie wysyła tam żadnych zapytań.
+One central job checks the gov.pl news page during the price-publication window. When it finds new
+price data, it publishes JSON. Home Assistant does not request the gov.pl page.
 
-### Publiczny endpoint JSON
+### Public JSON endpoint
 
 `https://gorbirad.github.io/CPN/news.json`
 
-Plik zawiera `lastUpdate` (czas ostatniej zmiany danych, UTC) oraz `articles`. Każdy artykuł zawiera
-`title`, `url`, `date` (ISO `RRRR-MM-DD` lub `null`), `summary` i `prices` (`pb95`, `pb98`, `on`).
-Przykładowo:
+The file contains `lastUpdate` (time of the latest data change in UTC) and `articles`. Each article
+has `title`, `url`, `date` (ISO `YYYY-MM-DD` or `null`), `summary`, and `prices` (`pb95`, `pb98`, `on`).
+Example:
 
 ```json
 {
   "lastUpdate": "2026-10-23T10:40:00Z",
   "articles": [
     {
-      "title": "Maksymalna cena detaliczna paliw obowiązująca...",
+      "title": "Maximum retail fuel prices effective...",
       "url": "https://www.gov.pl/web/energia/maksymalna-cena-detaliczna-paliw-...",
       "date": "2026-10-24",
       "summary": "Benzyna 95 - 6,51 zł/l, benzyna 98 - 7,21 zł/l, olej napędowy - 7,99 zł/l.",
@@ -50,90 +51,92 @@ Przykładowo:
 }
 ```
 
-### GitHub Actions i GitHub Pages
+### GitHub Actions and GitHub Pages
 
-Workflow `.github/workflows/publish-news.yaml` pobiera stronę, parsuje artykuły i publikuje `news.json`
-na GitHub Pages. Przed pierwszym przebiegiem włącz Pages w repozytorium: **Settings → Pages → Build and
-deployment → Source: GitHub Actions**. Workflow wymaga uprawnień `contents: write`, `pages: write` i
-`id-token: write`. Pierwszy poprawny przebieg utworzy plik i opublikuje endpoint; do tego czasu endpoint
-może zwracać 404.
+The `.github/workflows/publish-news.yaml` workflow fetches the source page, parses articles, and
+publishes `news.json` to GitHub Pages. Before its first run, enable Pages in the repository:
+**Settings → Pages → Build and deployment → Source: GitHub Actions**. The workflow requires
+`contents: write`, `pages: write`, and `id-token: write` permissions. The endpoint may return 404
+until the first successful publication.
 
-GitHub Actions interpretuje harmonogram cron w UTC i nie obsługuje stref czasowych ani zmiany czasu.
-Dlatego cron obejmuje odpowiednie godziny UTC dla czasu letniego i zimowego, a skrypt dodatkowo
-sprawdza lokalny czas `Europe/Warsaw` przed pobraniem strony.
+GitHub Actions cron uses UTC and does not support time zones or daylight-saving changes. The cron
+therefore covers the corresponding UTC hours for Polish summer and winter time, while the script
+checks `Europe/Warsaw` local time before requesting gov.pl.
 
-### Harmonogram
+### Schedule
 
-Sprawdzenia odbywają się co 10 minut: 12:00, 12:10, 12:20, 12:30, 12:40, 12:50 i 13:00 czasu
-polskiego. Poza tym oknem skrypt kończy działanie przed wysłaniem żądania do gov.pl. GitHub może
-opóźnić uruchomienie workflow, więc godziny są orientacyjne, nie gwarantowane co do minuty.
+Checks run every 10 minutes at 12:00, 12:10, 12:20, 12:30, 12:40, 12:50, and 13:00 Poland time.
+Outside this window, the script exits before making a gov.pl request. GitHub may delay scheduled
+workflow starts, so these times are targets, not exact guarantees.
 
-### Wykrywanie nowych cen
+### Detecting new prices
 
-Scraper porównuje istniejący JSON z pobranymi artykułami semantycznie. Ignoruje timestamp,
-formatowanie JSON i kolejność artykułów. Za zmianę uznaje zmianę ceny albo zmianę zestawu artykułów
-(nowy lub usunięty wpis). Jeśli dane biznesowe są identyczne, nie nadpisuje `news.json`, nie tworzy
-commita i nie wdraża ponownie Pages.
+The scraper compares the existing JSON with newly parsed articles semantically. It ignores timestamps,
+JSON formatting, and article ordering. A price change or a changed set of articles (an article added
+or removed) counts as a data change. If the business data is identical, the scraper does not rewrite
+`news.json`, create a commit, or redeploy Pages.
 
-### Mechanizm blokady po publikacji cen
+### Lock after new prices are published
 
-Po wykryciu zmiany scraper zapisuje w `state.json` `disabledUntil` ustawione na 12:00 następnego
-dnia w strefie `Europe/Warsaw` (wartość zapisana w UTC). Kolejne zadania odczytują stan i kończą się
-przed kontaktem z gov.pl aż do tej chwili. Jeżeli nie ma nowych cen, blokada nie jest przedłużana,
-więc kolejne zaplanowane sprawdzenia normalnie się odbywają. Uszkodzony `state.json` powoduje
-bezpieczne przerwanie bez zapytania do gov.pl; plik trzeba wtedy ręcznie naprawić.
+After detecting changed data, the scraper sets `disabledUntil` in `state.json` to 12:00 the next day
+in `Europe/Warsaw` (stored in UTC). Subsequent scheduled runs read this state and exit before
+contacting gov.pl until that time. If there are no new prices, the lock is not extended and the next
+scheduled check runs normally. If `state.json` is corrupt, the scraper fails closed without contacting
+gov.pl; repair the file manually to resume.
 
-### Cache w Home Assistant
+### Home Assistant cache
 
-Integracja używa trwałego magazynu Home Assistant (`Store`) z TTL jednej godziny. Aktualny cache
-jest używany bez pobierania JSON; po wygaśnięciu HA pobiera go ponownie z GitHub Pages. Cache
-przetrwa restart HA. Błędy HTTP, sieci, timeout i niepoprawny JSON powodują do trzech prób
-z backoffem (2 i 4 sekundy). Gdy odświeżenie się nie powiedzie, HA zachowuje ostatnie poprawne dane
-z cache; jeśli nie ma cache, zgłasza błąd aktualizacji zamiast tworzyć puste ceny.
+The integration uses Home Assistant's persistent `Store` with a one-hour TTL. A fresh cache is used
+without downloading JSON; after it expires, Home Assistant fetches the feed from GitHub Pages. The
+cache survives restarts. HTTP, network, timeout, and invalid-JSON errors trigger up to three attempts
+with 2- and 4-second backoff. If refresh fails, the integration retains the last valid cached data;
+without a cache, it reports an update error instead of exposing empty prices.
 
-| Encja | Opis |
-|-------|------|
-| `sensor.benzyna_95` | Benzyna 95 |
-| `sensor.benzyna_95_obecna` | Cena benzyny 95 obowiązująca **dziś** |
-| `sensor.benzyna_98` | Benzyna 98 |
-| `sensor.benzyna_98_obecna` | Cena benzyny 98 obowiązująca **dziś** |
-| `sensor.olej_napedowy` | Olej napędowy |
-| `sensor.olej_napedowy_obecna` | Cena oleju napędowego obowiązująca **dziś** |
-| `sensor.cena_obowiazuje_od` | Data, od której obowiązują aktualne ceny |
+## Entities
 
-Sensory „obecna” mają atrybuty: `valid_from`, `next_price`, `next_valid_from`, `change_next` (nowa − obecna),
-`previous_price`, `change_previous` (obecna − poprzednia). O północy przełączają się same na cenę obowiązującą
-od danego dnia, a pozostałe sensory (`benzyna_95` itd.) pokazują zawsze **najnowszą opublikowaną** cenę
-(często już na jutro).
+| Entity | Description |
+|--------|-------------|
+| `sensor.benzyna_95` | Latest published price for petrol 95 |
+| `sensor.benzyna_95_obecna` | Petrol 95 price effective **today** |
+| `sensor.benzyna_98` | Latest published price for petrol 98 |
+| `sensor.benzyna_98_obecna` | Petrol 98 price effective **today** |
+| `sensor.olej_napedowy` | Latest published price for diesel |
+| `sensor.olej_napedowy_obecna` | Diesel price effective **today** |
+| `sensor.cena_obowiazuje_od` | Date when the latest published prices take effect |
 
-Każdy sensor paliwa ma też atrybut `valid_from` (data obowiązywania, `RRRR-MM-DD`). Data pochodzi z adresu
-artykułu; dla cen obowiązujących przez kilka dni (np. weekend „17-19 października”) jest to pierwszy dzień.
-Ministerstwo publikuje ceny zwykle ok. godz. 12:00–12:30, więc nowa cena może pojawić się z takim opóźnieniem.
+The “current” sensors (`*_obecna`) have these attributes: `valid_from`, `next_price`,
+`next_valid_from`, `change_next` (new minus current), `previous_price`, and `change_previous`
+(current minus previous). They switch to the price effective that day at midnight. The other sensors
+always show the latest published price, which may already be for the next day.
 
-Atrybuty każdego sensora: `title`, `url`, `summary` (artykuł, z którego pochodzą ceny).
+Fuel price sensors also provide `valid_from` (`YYYY-MM-DD`), `title`, `url`, and `summary`. For a
+multi-day price article (for example a weekend range), `valid_from` is the first day of the range.
+The ministry usually publishes prices around 12:00–12:30, so a new price may appear with that delay.
 
-### Historia cen
+### Price history
 
-Przy pierwszym dodaniu integracji pobierane są ceny z ostatnich 7 dni (a jeśli ich brak – z 3 ostatnich
-artykułów) i zapisywane jako statystyki długoterminowe (jeden punkt na dobę, od 00:00). Dzięki temu
-od razu można zobaczyć zmiany na wykresie, np. kartą `statistics-graph`. Historia pochodzi z artykułów
-opublikowanych w JSON przez centralny scraper.
+When the integration is first added, it imports the last 7 days of prices (or the 3 latest articles
+if there are no articles in that period) into long-term statistics, with one point per day from
+00:00. This makes it possible to display a chart immediately, for example with a
+`statistics-graph` card. Historical data comes from articles in the central JSON feed.
 
-## Instalacja
+## Installation
 
-### HACS (zalecana)
+### HACS (recommended)
 
-1. HACS → menu ⋮ → **Custom repositories**.
-2. Dodaj `https://github.com/gorbirad/CPN` jako kategorię **Integration**.
-3. Wyszukaj **CPN**, kliknij **Download**.
-4. Zrestartuj Home Assistant.
+1. In HACS, open the ⋮ menu and choose **Custom repositories**.
+2. Add `https://github.com/gorbirad/CPN` with the **Integration** category.
+3. Search for **CPN** and select **Download**.
+4. Restart Home Assistant.
 
-### Ręczna
+### Manual installation
 
-1. Pobierz najnowsze wydanie z [Releases](https://github.com/gorbirad/CPN/releases) (lub sklonuj repozytorium).
-2. Skopiuj katalog `custom_components/cpn` do katalogu `custom_components` w konfiguracji HA
-   (tam, gdzie leży `configuration.yaml`). Jeśli `custom_components` nie istnieje, utwórz go.
-3. Efekt powinien wyglądać tak:
+1. Download the latest version from [Releases](https://github.com/gorbirad/CPN/releases), or clone
+   this repository.
+2. Copy `custom_components/cpn` into the `custom_components` directory in your Home Assistant
+   configuration (the directory containing `configuration.yaml`). Create `custom_components` if it
+   does not exist.
+3. The resulting layout should look like this:
 
    ```text
    config/
@@ -145,31 +148,32 @@ opublikowanych w JSON przez centralny scraper.
            └── ...
    ```
 
-4. Zrestartuj Home Assistant.
+4. Restart Home Assistant.
 
-## Konfiguracja
+## Setup
 
-1. **Ustawienia → Urządzenia i usługi → Dodaj integrację**.
-2. Wyszukaj **CPN** i zatwierdź.
+1. Go to **Settings → Devices & services → Add integration**.
+2. Search for **CPN** and complete setup.
 
-## Przykładowe karty (card-mod)
+## Example cards (card-mod)
 
-Trzy podobne karty dla benzyny 95: **nowa cena**, **cena obecna** i **różnica**. Każda jest też w osobnym
-pliku w repozytorium. Dla innych paliw zamień `benzyna_95` na `benzyna_98` lub `olej_napedowy`.
+These three similar cards demonstrate the **latest published price**, the **price effective today**,
+and the **price difference**. Each card also has a separate YAML file in this repository. To use
+another fuel, replace `sensor.benzyna_95` with `sensor.benzyna_98` or `sensor.olej_napedowy`.
 
-### Karta 1: nowa (najnowsza opublikowana) cena
+### Card 1: latest published price
 
-Plik: [example_card.yaml](example_card.yaml). Podświetla się na żółto, gdy cena zmieniła się w ciągu
-ostatniej godziny, i wyświetla datę, od której cena obowiązuje.
+See [example_card.yaml](example_card.yaml). It highlights the card when the price changed in the last
+hour and shows the date from which the price is effective.
 
-**Wymagania:** karta korzysta z [card-mod](https://github.com/thomasloven/lovelace-card-mod)
-(instalacja przez HACS → Frontend → wyszukaj „card-mod”, a następnie odśwież przeglądarkę).
-Bez card-mod karta wyświetli się, ale bez podświetlenia i dodatkowego opisu.
+**Requirement:** this card uses [card-mod](https://github.com/thomasloven/lovelace-card-mod).
+Install it from HACS → Frontend, then refresh the browser. Without card-mod, the card itself still
+works but the highlight and additional date text are not shown.
 
 ```yaml
 type: entity
 entity: sensor.benzyna_95
-name: Benzyna 95
+name: Petrol 95
 icon: mdi:gas-station
 card_mod:
   style: |
@@ -185,7 +189,7 @@ card_mod:
       position: relative;
     }
     .value:after {
-      content: "Obowiązuje od: {{ as_datetime(state_attr('sensor.benzyna_95', 'valid_from')).strftime('%d.%m.%Y') }}";
+      content: "Effective from: {{ as_datetime(state_attr('sensor.benzyna_95', 'valid_from')).strftime('%d.%m.%Y') }}";
       display: block;
       font-size: 12px;
       color: var(--secondary-text-color);
@@ -193,29 +197,25 @@ card_mod:
     }
 ```
 
-Aby uzyskać kartę dla innego paliwa, zamień `sensor.benzyna_95` na `sensor.benzyna_98` lub `sensor.olej_napedowy`.
+### Card 2: price effective today
 
-### Karta 2: cena obecna (obowiązująca dziś)
-
-Plik: [example_card_current_price.yaml](example_card_current_price.yaml).
+See [example_card_current_price.yaml](example_card_current_price.yaml).
 
 ```yaml
 type: entity
 entity: sensor.benzyna_95_obecna
-name: Benzyna 95 – obecna
+name: Petrol 95 — current
 icon: mdi:gas-station
 card_mod:
   style: |
     ha-card {
       padding-bottom: 12px;
     }
-
     .value {
       position: relative;
     }
-
     .value:after {
-      content: "Obowiązuje od: {{ as_datetime(state_attr('sensor.benzyna_95_obecna', 'valid_from')).strftime('%d.%m.%Y') }}";
+      content: "Effective from: {{ as_datetime(state_attr('sensor.benzyna_95_obecna', 'valid_from')).strftime('%d.%m.%Y') }}";
       display: block;
       font-size: 12px;
       color: var(--secondary-text-color);
@@ -223,18 +223,18 @@ card_mod:
     }
 ```
 
-### Karta 3: różnica cen (nowa − obecna)
+### Card 3: price difference (new minus current)
 
-Plik: [example_card_diff.yaml](example_card_diff.yaml). Zielone tło oznacza obniżkę, czerwone podwyżkę;
-pod wartością widać nową cenę i datę od kiedy obowiązuje. Gdy nowa cena nie jest jeszcze znana, karta
-pokazuje „unknown”.
+See [example_card_diff.yaml](example_card_diff.yaml). A green background means a price decrease;
+red means an increase. The new price and its effective date appear below the value. If a new price
+is not yet available, the card shows `unknown`.
 
 ```yaml
 type: entity
 entity: sensor.benzyna_95_obecna
 attribute: change_next
-name: Benzyna 95 – zmiana (nowa − obecna)
-unit: zł
+name: Petrol 95 — price change (new − current)
+unit: PLN
 icon: mdi:swap-vertical
 card_mod:
   style: |
@@ -248,9 +248,8 @@ card_mod:
       border-radius: 12px;
       padding-bottom: 12px;
     }
-
     .value:after {
-      content: "{{ state_attr('sensor.benzyna_95_obecna', 'next_price') }} zł od {{ as_datetime(state_attr('sensor.benzyna_95_obecna', 'next_valid_from')).strftime('%d.%m.%Y') if state_attr('sensor.benzyna_95_obecna', 'next_valid_from') else '–' }}";
+      content: "{{ state_attr('sensor.benzyna_95_obecna', 'next_price') }} PLN from {{ as_datetime(state_attr('sensor.benzyna_95_obecna', 'next_valid_from')).strftime('%d.%m.%Y') if state_attr('sensor.benzyna_95_obecna', 'next_valid_from') else '–' }}";
       display: block;
       font-size: 12px;
       color: var(--secondary-text-color);
@@ -258,34 +257,34 @@ card_mod:
     }
 ```
 
-### Karta zbiorcza (Markdown, bez card-mod)
+### Combined Markdown card (no card-mod)
 
-Jedna karta Markdown (nie wymaga card-mod) z tabelą: cena obecna, nowa (od jutra) i zmiana. Plik:
-[example_card_current.yaml](example_card_current.yaml).
+The [example_card_current.yaml](example_card_current.yaml) card shows the current price, the new
+price (from the next effective date), and the difference in a table. It does not require card-mod.
 
 ```yaml
 type: markdown
-title: Ceny paliw (max)
+title: Maximum fuel prices
 content: |
-  {% set fuels = [('Benzyna 95', 'sensor.benzyna_95_obecna'),
-                  ('Benzyna 98', 'sensor.benzyna_98_obecna'),
-                  ('Olej napędowy', 'sensor.olej_napedowy_obecna')] %}
+  {% set fuels = [('Petrol 95', 'sensor.benzyna_95_obecna'),
+                  ('Petrol 98', 'sensor.benzyna_98_obecna'),
+                  ('Diesel', 'sensor.olej_napedowy_obecna')] %}
   {% set e = fuels[0][1] %}
-  Obecna cena od **{{ state_attr(e, 'valid_from') }}**
-  {%- if state_attr(e, 'next_valid_from') %}, nowa od **{{ state_attr(e, 'next_valid_from') }}**{% endif %}
+  Current price from **{{ state_attr(e, 'valid_from') }}**
+  {%- if state_attr(e, 'next_valid_from') %}, new price from **{{ state_attr(e, 'next_valid_from') }}**{% endif %}
 
-  | Paliwo | Obecnie | Nowa | Zmiana |
+  | Fuel | Current | New | Change |
   |---|---|---|---|
   {% for name, ent in fuels -%}
   {% set now_p = states(ent) | float(none) -%}
   {% set nxt = state_attr(ent, 'next_price') -%}
   {% set d = state_attr(ent, 'change_next') -%}
   {% set dp = state_attr(ent, 'change_previous') -%}
-  | {{ name }} | **{{ '%.2f' | format(now_p) if now_p is not none else '–' }} zł** | {{ '%.2f' | format(nxt) ~ ' zł' if nxt is not none else '–' }} | {% if d is not none %}{{ '🔺 +' if d > 0 else '🔻 ' if d < 0 else '' }}{{ '%.2f' | format(d) }} zł (od jutra){% elif dp is not none %}{{ '🔺 +' if dp > 0 else '🔻 ' if dp < 0 else '' }}{{ '%.2f' | format(dp) }} zł (vs poprzednia){% else %}–{% endif %} |
+  | {{ name }} | **{{ '%.2f' | format(now_p) if now_p is not none else '–' }} PLN** | {{ '%.2f' | format(nxt) ~ ' PLN' if nxt is not none else '–' }} | {% if d is not none %}{{ '🔺 +' if d > 0 else '🔻 ' if d < 0 else '' }}{{ '%.2f' | format(d) }} PLN (next){% elif dp is not none %}{{ '🔺 +' if dp > 0 else '🔻 ' if dp < 0 else '' }}{{ '%.2f' | format(dp) }} PLN (vs previous){% else %}–{% endif %} |
   {% endfor %}
 ```
 
-Wykres z historią cen (7 dni):
+Price history chart (7 days):
 
 ```yaml
 type: statistics-graph
@@ -299,34 +298,35 @@ days_to_show: 7
 period: day
 ```
 
-## Struktura projektu
+## Project structure
 
 ```text
 CPN/
 ├── .github/
 │   └── workflows/
-│       ├── publish-news.yaml    # cykliczny scraper i deploy na GitHub Pages
-│       └── validate.yaml        # walidacja HACS + hassfest
+│       ├── publish-news.yaml    # scheduled scraper and GitHub Pages deployment
+│       └── validate.yaml        # HACS, hassfest, and scraper tests
 ├── custom_components/
 │   └── cpn/
-│       ├── __init__.py          # setup/unload wpisu konfiguracji
-│       ├── config_flow.py       # prosty config flow (bez parametrów)
-│       ├── const.py             # URL JSON, TTL cache i lista paliw
-│       ├── coordinator.py       # pobieranie JSON i trwały cache
-│       ├── history.py           # import historii cen (statystyki)
-│       ├── manifest.json        # metadane integracji
-│       ├── sensor.py            # sensory cen paliw
+│       ├── __init__.py          # integration setup and unload
+│       ├── config_flow.py       # UI setup flow
+│       ├── const.py             # JSON URL, cache TTL, and fuel list
+│       ├── coordinator.py       # JSON fetching and persistent cache
+│       ├── history.py           # historical statistics import
+│       ├── manifest.json        # integration metadata
+│       ├── sensor.py            # fuel-price sensors
 │       ├── strings.json
 │       └── translations/
 │           ├── en.json
 │           └── pl.json
 ├── scripts/
-│   └── update_news.py           # scraper gov.pl, porównanie danych i blokada
+│   └── update_news.py           # gov.pl scraper, comparison, and daily lock
 ├── tests/
-│   └── test_update_news.py      # testy parsera, harmonogramu i blokady
-├── .gitignore
-├── news.json                    # dane publikowane przez Pages (tworzy workflow)
-├── state.json                   # stan blokady scrapera
-├── hacs.json                    # metadane HACS
+│   └── test_update_news.py      # scraper and schedule tests
+├── news.json                    # generated public feed (created by workflow)
+├── state.json                   # scraper lock state
+├── CHANGELOG.md
+├── hacs.json
+├── LICENSE
 └── README.md
 ```
