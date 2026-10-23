@@ -105,12 +105,14 @@ def split_current(articles: list[dict], today: date) -> tuple[dict | None, dict 
 class CpnCoordinator(DataUpdateCoordinator[dict]):
     """Read published fuel-price data, using a one-hour persistent cache."""
 
-    def __init__(self, hass: HomeAssistant) -> None:
+    def __init__(self, hass: HomeAssistant, force_refresh: bool = False) -> None:
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
         self._store = Store(hass, 1, f"{DOMAIN}_news_cache")
         self._cached_data: dict | None = None
         self._cached_at: datetime | None = None
         self._cache_loaded = False
+        self._force_refresh = force_refresh
+        self.fetched_from_network = False
 
     async def _load_cache(self) -> None:
         if self._cache_loaded:
@@ -132,7 +134,8 @@ class CpnCoordinator(DataUpdateCoordinator[dict]):
         await self._load_cache()
         now = datetime.now(timezone.utc)
         if (
-            self._cached_data is not None
+            not self._force_refresh
+            and self._cached_data is not None
             and self._cached_at is not None
             and timedelta(0) <= now - self._cached_at < timedelta(seconds=CACHE_TTL_SECONDS)
         ):
@@ -155,6 +158,8 @@ class CpnCoordinator(DataUpdateCoordinator[dict]):
                     _LOGGER.error("Nie udało się zapisać trwałego cache CPN: %s", err)
                 self._cached_at = fetched_at
                 self._cached_data = data
+                self._force_refresh = False
+                self.fetched_from_network = True
                 return data
             except (aiohttp.ClientError, asyncio.TimeoutError, OSError, ValueError) as err:
                 last_error = err

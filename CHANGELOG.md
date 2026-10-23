@@ -9,6 +9,7 @@ zestawieniem opisów z GitHub Releases; same wydania pozostają dostępne na
 - Przy pierwszym imporcie historii używane są ceny z ostatnich 7 dni, a gdy ich brak — z 4 najnowszych artykułów.
 - Migracja ponawia import historii na istniejących wpisach HA po udostępnieniu poprawnego feedu JSON.
 - Nieudany import (brak punktów historycznych) nie jest oznaczany jako zakończony.
+- Po aktualizacji integracji pierwsze pobranie feedu omija cache, aby jednorazowo sprawdzić aktualne dane.
 
 ## [1.1.1] - 2026-10-23
 

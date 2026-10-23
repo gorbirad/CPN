@@ -91,7 +91,10 @@ Integracja używa trwałego magazynu Home Assistant (`Store`) z TTL jednej godzi
 jest używany bez pobierania JSON; po wygaśnięciu HA pobiera go ponownie z GitHub Pages. Cache
 przetrwa restart HA. Błędy HTTP, sieci, timeout i niepoprawny JSON powodują do trzech prób
 z backoffem (2 i 4 sekundy). Gdy odświeżenie się nie powiedzie, HA zachowuje ostatnie poprawne dane
-z cache; jeśli nie ma cache, zgłasza błąd aktualizacji zamiast tworzyć puste ceny.
+z cache; jeśli nie ma cache, zgłasza błąd aktualizacji zamiast tworzyć puste ceny. Po aktualizacji
+integracji pierwsze pobranie feedu pomija cache; znacznik wersji zapisuje się dopiero po udanym
+pobraniu z sieci. Jeśli Pages jest niedostępne, integracja ponawia próbę przy kolejnych
+zaplanowanych odświeżeniach i używa poprzedniego cache, jeśli jest dostępny.
 
 | Encja | Opis |
 |-------|------|

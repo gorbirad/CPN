@@ -90,7 +90,10 @@ The integration uses Home Assistant's persistent `Store` with a one-hour TTL. A 
 without downloading JSON; after it expires, Home Assistant fetches the feed from GitHub Pages. The
 cache survives restarts. HTTP, network, timeout, and invalid-JSON errors trigger up to three attempts
 with 2- and 4-second backoff. If refresh fails, the integration retains the last valid cached data;
-without a cache, it reports an update error instead of exposing empty prices.
+without a cache, it reports an update error instead of exposing empty prices. After an integration
+upgrade, the first feed check bypasses the cache once; the version marker is saved only after a
+successful network response. If Pages is unavailable, the integration retries on its scheduled
+refreshes and keeps the previous cache when available.
 
 ## Entities
 
