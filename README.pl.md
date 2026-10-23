@@ -116,7 +116,7 @@ Atrybuty każdego sensora: `title`, `url`, `summary` (artykuł, z którego pocho
 
 ### Historia cen
 
-Przy pierwszym dodaniu integracji pobierane są ceny z ostatnich 7 dni (a jeśli ich brak – z 3 ostatnich
+Przy pierwszym dodaniu integracji pobierane są ceny z ostatnich 7 dni (a jeśli ich brak – z 4 ostatnich
 artykułów) i zapisywane jako statystyki długoterminowe (jeden punkt na dobę, od 00:00). Dzięki temu
 od razu można zobaczyć zmiany na wykresie, np. kartą `statistics-graph`. Historia pochodzi z artykułów
 opublikowanych w JSON przez centralny scraper.
@@ -312,6 +312,7 @@ CPN/
 ├── custom_components/
 │   └── cpn/
 │       ├── __init__.py          # setup/unload wpisu konfiguracji
+│       ├── article_history.py   # wybór artykułów do początkowej historii
 │       ├── config_flow.py       # prosty config flow (bez parametrów)
 │       ├── const.py             # URL JSON, TTL cache i lista paliw
 │       ├── coordinator.py       # pobieranie JSON i trwały cache

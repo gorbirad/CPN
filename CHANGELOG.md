@@ -4,7 +4,11 @@ Historia zmian integracji CPN. Opisy opublikowanych wydań w tym pliku są
 zestawieniem opisów z GitHub Releases; same wydania pozostają dostępne na
 [stronie Releases](https://github.com/gorbirad/CPN/releases).
 
-## [1.1.0] - Unreleased
+## [1.1.1] - Unreleased
+
+- Przy pierwszym imporcie historii używane są ceny z ostatnich 7 dni, a gdy ich brak — z 4 najnowszych artykułów.
+
+## [1.1.0] - 2026-10-23
 
 - Dodano centralny scraper GitHub Actions i publikację cen przez GitHub Pages.
 - Integracja Home Assistant pobiera wyłącznie `news.json`; bezpośrednie odpytywanie gov.pl usunięto.

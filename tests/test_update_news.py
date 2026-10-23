@@ -4,11 +4,13 @@ import json
 import sys
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import update_news
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "custom_components" / "cpn"))
+from article_history import select_history
 
 
 FIXTURE = """
@@ -24,6 +26,46 @@ def scheduled_now() -> datetime:
 
 
 class UpdateNewsTests(unittest.TestCase):
+    def test_history_selects_articles_within_last_seven_days(self):
+        today = date(2026, 10, 23)
+        articles = [
+            {"date": date(2026, 10, 12)},
+            {"date": date(2026, 10, 23)},
+            {"date": date(2026, 10, 17)},
+            {"date": date(2026, 10, 16)},
+            {"date": date(2026, 10, 20)},
+        ]
+        selected = select_history(articles, today)
+        self.assertEqual(
+            [article["date"] for article in selected],
+            [
+                date(2026, 10, 16),
+                date(2026, 10, 17),
+                date(2026, 10, 20),
+                date(2026, 10, 23),
+            ],
+        )
+
+    def test_history_falls_back_to_four_latest_old_articles(self):
+        today = date(2026, 10, 23)
+        articles = [
+            {"date": date(2026, 10, 1)},
+            {"date": date(2026, 10, 5)},
+            {"date": date(2026, 10, 3)},
+            {"date": date(2026, 10, 2)},
+            {"date": date(2026, 10, 4)},
+        ]
+        selected = select_history(articles, today)
+        self.assertEqual(
+            [article["date"] for article in selected],
+            [
+                date(2026, 10, 2),
+                date(2026, 10, 3),
+                date(2026, 10, 4),
+                date(2026, 10, 5),
+            ],
+        )
+
     def test_parses_weekend_article_and_prices(self):
         articles = update_news.parse_articles(FIXTURE)
         self.assertEqual(len(articles), 1)

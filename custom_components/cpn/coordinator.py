@@ -15,12 +15,10 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
+from .article_history import select_history
 from .const import CACHE_TTL_SECONDS, DOMAIN, FUELS, NEWS_JSON_URL
 
 _LOGGER = logging.getLogger(__name__)
-
-HISTORY_DAYS = 7
-HISTORY_MIN_ITEMS = 3
 
 
 def _parse_timestamp(value: object) -> datetime:
@@ -102,14 +100,6 @@ def split_current(articles: list[dict], today: date) -> tuple[dict | None, dict 
     nxt = future[-1] if future else None
     prev = dated[current_idx + 1] if current_idx + 1 < len(dated) else None
     return dated[current_idx], nxt, prev
-
-
-def select_history(articles: list[dict], today: date) -> list[dict]:
-    """Articles from the last week; if none, the last 3 ones (oldest first)."""
-    dated = [a for a in articles if a.get("date") and a["date"] <= today]
-    week = [a for a in dated if (today - a["date"]).days <= HISTORY_DAYS]
-    chosen = week or dated[:HISTORY_MIN_ITEMS]
-    return sorted(chosen, key=lambda a: a["date"])
 
 
 class CpnCoordinator(DataUpdateCoordinator[dict]):

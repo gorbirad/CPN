@@ -115,7 +115,7 @@ The ministry usually publishes prices around 12:00–12:30, so a new price may a
 
 ### Price history
 
-When the integration is first added, it imports the last 7 days of prices (or the 3 latest articles
+When the integration is first added, it imports the last 7 days of prices (or the 4 latest articles
 if there are no articles in that period) into long-term statistics, with one point per day from
 00:00. This makes it possible to display a chart immediately, for example with a
 `statistics-graph` card. Historical data comes from articles in the central JSON feed.
@@ -309,6 +309,7 @@ CPN/
 ├── custom_components/
 │   └── cpn/
 │       ├── __init__.py          # integration setup and unload
+│       ├── article_history.py   # selects initial history articles
 │       ├── config_flow.py       # UI setup flow
 │       ├── const.py             # JSON URL, cache TTL, and fuel list
 │       ├── coordinator.py       # JSON fetching and persistent cache

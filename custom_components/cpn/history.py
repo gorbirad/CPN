@@ -10,8 +10,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 
+from .article_history import select_history
 from .const import DOMAIN, FUELS
-from .coordinator import select_history
 
 _LOGGER = logging.getLogger(__name__)
 
