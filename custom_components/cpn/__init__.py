@@ -10,6 +10,7 @@ from .coordinator import CpnCoordinator
 from .history import import_history
 
 PLATFORMS = ["sensor"]
+HISTORY_IMPORT_VERSION = "1.1.2"
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -33,11 +34,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
     )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    if not entry.data.get("history_imported"):
-        import_history(hass, (coordinator.data or {}).get("articles", []))
-        hass.config_entries.async_update_entry(
-            entry, data={**entry.data, "history_imported": True}
-        )
+    if entry.data.get("history_import_version") != HISTORY_IMPORT_VERSION:
+        imported = import_history(hass, (coordinator.data or {}).get("articles", []))
+        if imported:
+            hass.config_entries.async_update_entry(
+                entry,
+                data={
+                    **entry.data,
+                    "history_imported": True,
+                    "history_import_version": HISTORY_IMPORT_VERSION,
+                },
+            )
     return True
 
 

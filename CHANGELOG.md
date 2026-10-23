@@ -4,9 +4,13 @@ Historia zmian integracji CPN. Opisy opublikowanych wydań w tym pliku są
 zestawieniem opisów z GitHub Releases; same wydania pozostają dostępne na
 [stronie Releases](https://github.com/gorbirad/CPN/releases).
 
-## [1.1.1] - Unreleased
+## [1.1.2] - Unreleased
 
 - Przy pierwszym imporcie historii używane są ceny z ostatnich 7 dni, a gdy ich brak — z 4 najnowszych artykułów.
+- Migracja ponawia import historii na istniejących wpisach HA po udostępnieniu poprawnego feedu JSON.
+- Nieudany import (brak punktów historycznych) nie jest oznaczany jako zakończony.
+
+## [1.1.1] - 2026-10-23
 
 ## [1.1.0] - 2026-10-23
 

@@ -115,8 +115,9 @@ The ministry usually publishes prices around 12:00–12:30, so a new price may a
 
 ### Price history
 
-When the integration is first added, it imports the last 7 days of prices (or the 4 latest articles
-if there are no articles in that period) into long-term statistics, with one point per day from
+When the integration is first added or updated with a history-import change, it imports the last
+7 days of prices (or the 4 latest articles if there are no articles in that period) into long-term
+statistics, with one point per day from
 00:00. This makes it possible to display a chart immediately, for example with a
 `statistics-graph` card. Historical data comes from articles in the central JSON feed.
 

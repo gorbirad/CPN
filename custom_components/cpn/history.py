@@ -56,4 +56,8 @@ def import_history(hass: HomeAssistant, articles: list[dict]) -> int:
             async_import_statistics(hass, _metadata(entity_id), stats)
             imported += len(stats)
     _LOGGER.debug("Zaimportowano %s punktów historii", imported)
+    if not imported:
+        _LOGGER.warning(
+            "Nie zaimportowano historii cen: brak artykułów z poprawną datą i cenami"
+        )
     return imported
