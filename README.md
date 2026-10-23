@@ -53,9 +53,10 @@ Przykładowo:
 ### GitHub Actions i GitHub Pages
 
 Workflow `.github/workflows/publish-news.yaml` pobiera stronę, parsuje artykuły i publikuje `news.json`
-na GitHub Pages. W repozytorium wybierz **Settings → Pages → Build and deployment → Source:
-GitHub Actions**. Workflow wymaga uprawnień `contents: write`, `pages: write` i `id-token: write`.
-Pierwszy poprawny przebieg utworzy plik i opublikuje endpoint; do tego czasu endpoint może zwracać 404.
+na GitHub Pages. Przed pierwszym przebiegiem włącz Pages w repozytorium: **Settings → Pages → Build and
+deployment → Source: GitHub Actions**. Workflow wymaga uprawnień `contents: write`, `pages: write` i
+`id-token: write`. Pierwszy poprawny przebieg utworzy plik i opublikuje endpoint; do tego czasu endpoint
+może zwracać 404.
 
 GitHub Actions interpretuje harmonogram cron w UTC i nie obsługuje stref czasowych ani zmiany czasu.
 Dlatego cron obejmuje odpowiednie godziny UTC dla czasu letniego i zimowego, a skrypt dodatkowo
