@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "CPN",
-        "description": "Add the maximum fuel prices integration (gov.pl)?"
+        "description": "Add the maximum fuel prices integration?"
       }
     },
     "abort": {

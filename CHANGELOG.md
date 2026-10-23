@@ -4,6 +4,14 @@ Historia zmian integracji CPN. Opisy opublikowanych wydań w tym pliku są
 zestawieniem opisów z GitHub Releases; same wydania pozostają dostępne na
 [stronie Releases](https://github.com/gorbirad/CPN/releases).
 
+## [Unreleased]
+
+- Dodano centralny scraper GitHub Actions i publikację cen przez GitHub Pages.
+- Integracja Home Assistant pobiera wyłącznie `news.json`; bezpośrednie odpytywanie gov.pl usunięto.
+- Dodano jednogodzinny, trwały cache oraz walidację danych i ponawianie żądań z backoffem.
+- Dodano harmonogram 12:00–13:00 czasu polskiego i blokadę dalszego scrapowania po wykryciu zmian.
+- Scraper pomija zapis i commity, jeśli semantyczne dane cenowe się nie zmieniły.
+
 ## [1.0.5] - 2026-10-16
 
 ### Nowe

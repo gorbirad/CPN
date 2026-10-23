@@ -10,12 +10,85 @@
 [![Sponsor](https://img.shields.io/badge/Sponsor-gorbirad-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/gorbirad)
 [![Latest release](https://img.shields.io/github/v/release/gorbirad/CPN)](https://github.com/gorbirad/CPN/releases/latest)
 
-Integracja Home Assistant. Co 15 minut (:05, :20, :35, :50) sprawdza stronę
-[gov.pl/web/energia/wiadomosci](https://www.gov.pl/web/energia/wiadomosci), znajduje najnowszy
-artykuł „Maksymalna cena detaliczna paliw…” i tworzy sensory (PLN/l):
+Integracja Home Assistant pokazująca maksymalne ceny paliw (PLN/l). Dane publikuje centralny scraper
+z GitHub Actions; instancje Home Assistant pobierają wyłącznie JSON z GitHub Pages i nigdy nie łączą
+się bezpośrednio z gov.pl.
 
 Pełna historia zmian znajduje się w [CHANGELOG.md](CHANGELOG.md); opisy wydań są też na
 [GitHub Releases](https://github.com/gorbirad/CPN/releases).
+
+## Architektura
+
+```text
+gov.pl → GitHub Actions (scraper) → news.json → GitHub Pages → integracje CPN w HA
+```
+
+Jedno centralne zadanie sprawdza stronę wiadomości gov.pl tylko w wyznaczonym oknie publikacji.
+Po wykryciu nowego artykułu z cenami publikuje JSON. Home Assistant nie zna adresu strony gov.pl
+i nie wysyła tam żadnych zapytań.
+
+### Publiczny endpoint JSON
+
+`https://gorbirad.github.io/CPN/news.json`
+
+Plik zawiera `lastUpdate` (czas ostatniej zmiany danych, UTC) oraz `articles`. Każdy artykuł zawiera
+`title`, `url`, `date` (ISO `RRRR-MM-DD` lub `null`), `summary` i `prices` (`pb95`, `pb98`, `on`).
+Przykładowo:
+
+```json
+{
+  "lastUpdate": "2026-10-23T10:40:00Z",
+  "articles": [
+    {
+      "title": "Maksymalna cena detaliczna paliw obowiązująca...",
+      "url": "https://www.gov.pl/web/energia/maksymalna-cena-detaliczna-paliw-...",
+      "date": "2026-10-24",
+      "summary": "Benzyna 95 - 6,51 zł/l, benzyna 98 - 7,21 zł/l, olej napędowy - 7,99 zł/l.",
+      "prices": { "pb95": 6.51, "pb98": 7.21, "on": 7.99 }
+    }
+  ]
+}
+```
+
+### GitHub Actions i GitHub Pages
+
+Workflow `.github/workflows/publish-news.yaml` pobiera stronę, parsuje artykuły i publikuje `news.json`
+na GitHub Pages. W repozytorium wybierz **Settings → Pages → Build and deployment → Source:
+GitHub Actions**. Workflow wymaga uprawnień `contents: write`, `pages: write` i `id-token: write`.
+Pierwszy poprawny przebieg utworzy plik i opublikuje endpoint; do tego czasu endpoint może zwracać 404.
+
+GitHub Actions interpretuje harmonogram cron w UTC i nie obsługuje stref czasowych ani zmiany czasu.
+Dlatego cron obejmuje odpowiednie godziny UTC dla czasu letniego i zimowego, a skrypt dodatkowo
+sprawdza lokalny czas `Europe/Warsaw` przed pobraniem strony.
+
+### Harmonogram
+
+Sprawdzenia odbywają się co 10 minut: 12:00, 12:10, 12:20, 12:30, 12:40, 12:50 i 13:00 czasu
+polskiego. Poza tym oknem skrypt kończy działanie przed wysłaniem żądania do gov.pl. GitHub może
+opóźnić uruchomienie workflow, więc godziny są orientacyjne, nie gwarantowane co do minuty.
+
+### Wykrywanie nowych cen
+
+Scraper porównuje istniejący JSON z pobranymi artykułami semantycznie. Ignoruje timestamp,
+formatowanie JSON i kolejność artykułów. Za zmianę uznaje zmianę ceny albo zmianę zestawu artykułów
+(nowy lub usunięty wpis). Jeśli dane biznesowe są identyczne, nie nadpisuje `news.json`, nie tworzy
+commita i nie wdraża ponownie Pages.
+
+### Mechanizm blokady po publikacji cen
+
+Po wykryciu zmiany scraper zapisuje w `state.json` `disabledUntil` ustawione na 12:00 następnego
+dnia w strefie `Europe/Warsaw` (wartość zapisana w UTC). Kolejne zadania odczytują stan i kończą się
+przed kontaktem z gov.pl aż do tej chwili. Jeżeli nie ma nowych cen, blokada nie jest przedłużana,
+więc kolejne zaplanowane sprawdzenia normalnie się odbywają. Uszkodzony `state.json` powoduje
+bezpieczne przerwanie bez zapytania do gov.pl; plik trzeba wtedy ręcznie naprawić.
+
+### Cache w Home Assistant
+
+Integracja używa trwałego magazynu Home Assistant (`Store`) z TTL jednej godziny. Aktualny cache
+jest używany bez pobierania JSON; po wygaśnięciu HA pobiera go ponownie z GitHub Pages. Cache
+przetrwa restart HA. Błędy HTTP, sieci, timeout i niepoprawny JSON powodują do trzech prób
+z backoffem (2 i 4 sekundy). Gdy odświeżenie się nie powiedzie, HA zachowuje ostatnie poprawne dane
+z cache; jeśli nie ma cache, zgłasza błąd aktualizacji zamiast tworzyć puste ceny.
 
 | Encja | Opis |
 |-------|------|
@@ -42,8 +115,8 @@ Atrybuty każdego sensora: `title`, `url`, `summary` (artykuł, z którego pocho
 
 Przy pierwszym dodaniu integracji pobierane są ceny z ostatnich 7 dni (a jeśli ich brak – z 3 ostatnich
 artykułów) i zapisywane jako statystyki długoterminowe (jeden punkt na dobę, od 00:00). Dzięki temu
-od razu można zobaczyć zmiany na wykresie, np. kartą `statistics-graph`. Dane pochodzą z pierwszej strony
-listy wiadomości gov.pl.
+od razu można zobaczyć zmiany na wykresie, np. kartą `statistics-graph`. Historia pochodzi z artykułów
+opublikowanych w JSON przez centralny scraper.
 
 ## Instalacja
 
@@ -231,13 +304,14 @@ period: day
 CPN/
 ├── .github/
 │   └── workflows/
+│       ├── publish-news.yaml    # cykliczny scraper i deploy na GitHub Pages
 │       └── validate.yaml        # walidacja HACS + hassfest
 ├── custom_components/
 │   └── cpn/
 │       ├── __init__.py          # setup/unload wpisu konfiguracji
 │       ├── config_flow.py       # prosty config flow (bez parametrów)
-│       ├── const.py             # stałe: URL, interwał, lista paliw
-│       ├── coordinator.py       # pobieranie i parsowanie strony gov.pl
+│       ├── const.py             # URL JSON, TTL cache i lista paliw
+│       ├── coordinator.py       # pobieranie JSON i trwały cache
 │       ├── history.py           # import historii cen (statystyki)
 │       ├── manifest.json        # metadane integracji
 │       ├── sensor.py            # sensory cen paliw
@@ -245,7 +319,13 @@ CPN/
 │       └── translations/
 │           ├── en.json
 │           └── pl.json
+├── scripts/
+│   └── update_news.py           # scraper gov.pl, porównanie danych i blokada
+├── tests/
+│   └── test_update_news.py      # testy parsera, harmonogramu i blokady
 ├── .gitignore
+├── news.json                    # dane publikowane przez Pages (tworzy workflow)
+├── state.json                   # stan blokady scrapera
 ├── hacs.json                    # metadane HACS
 └── README.md
 ```

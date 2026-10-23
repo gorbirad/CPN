@@ -1,0 +1,63 @@
+name: Publish fuel prices
+
+on:
+  schedule:
+    # GitHub cron uses UTC. Both hours cover Warsaw winter (11 UTC) and summer (10 UTC).
+    # update_news.py allows only 12:00-13:00 Europe/Warsaw before making a gov.pl request.
+    - cron: "0,10,20,30,40,50 10,11 * * *"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: publish-fuel-news
+  cancel-in-progress: false
+
+jobs:
+  refresh-and-publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check schedule and update data
+        id: scraper
+        run: python scripts/update_news.py
+
+      - name: Commit changed data
+        if: steps.scraper.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add news.json state.json
+          git commit -m "Update published fuel prices"
+          git push origin HEAD:main
+
+      - name: Prepare Pages artifact
+        if: steps.scraper.outputs.changed == 'true'
+        run: |
+          mkdir -p _site
+          cp news.json _site/news.json
+
+      - name: Upload Pages artifact
+        if: steps.scraper.outputs.changed == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        if: steps.scraper.outputs.changed == 'true'
+        id: deployment
+        uses: actions/deploy-pages@v4

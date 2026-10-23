@@ -1,51 +1,95 @@
 """Data coordinator for CPN."""
 from __future__ import annotations
 
-import html
+import asyncio
+import json
 import logging
-import re
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
+from math import isfinite
+
+import aiohttp
 
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import BASE_URL, DOMAIN, NEWS_URL
+from .const import CACHE_TTL_SECONDS, DOMAIN, FUELS, NEWS_JSON_URL
 
 _LOGGER = logging.getLogger(__name__)
 
-ARTICLE_RE = re.compile(
-    r'<a[^>]+href="(?P<href>/web/energia/maksymalna-cena-detaliczna-paliw[^"]*)"[^>]*>'
-    r"(?P<title>.*?)</a>(?P<rest>.*?)(?=<a[^>]+href=\"/web/energia/|\Z)",
-    re.S | re.I,
-)
-INTRO_RE = re.compile(r'<div class="intro">(?P<intro>.*?)</div>', re.S | re.I)
-PRICE_RES = {
-    "pb95": re.compile(r"benzyna\s*95\s*[-–—:]\s*(\d+[.,]\d+)", re.I),
-    "pb98": re.compile(r"benzyna\s*98\s*[-–—:]\s*(\d+[.,]\d+)", re.I),
-    "on": re.compile(r"olej\s*napędowy\s*[-–—:]\s*(\d+[.,]\d+)", re.I),
-}
-TAG_RE = re.compile(r"<[^>]+>")
-DATE_RE = re.compile(
-    r"obowiazujaca-(?:w-dniach-)?(\d{1,2})(?:-\d{1,2})?-([a-z]+)(?:-\d{1,2}-[a-z]+)?-(\d{4})"
-)
-MONTHS = {
-    "stycznia": 1, "lutego": 2, "marca": 3, "kwietnia": 4, "maja": 5,
-    "czerwca": 6, "lipca": 7, "sierpnia": 8, "wrzesnia": 9,
-    "pazdziernika": 10, "listopada": 11, "grudnia": 12,
-}
 HISTORY_DAYS = 7
 HISTORY_MIN_ITEMS = 3
 
 
-def _parse_date(url: str) -> date | None:
-    m = DATE_RE.search(url)
-    if not m or m.group(2) not in MONTHS:
-        return None
+def _parse_timestamp(value: object) -> datetime:
+    if not isinstance(value, str):
+        raise ValueError("timestamp must be a string")
     try:
-        return date(int(m.group(3)), MONTHS[m.group(2)], int(m.group(1)))
-    except ValueError:
-        return None
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as err:
+        raise ValueError("timestamp is not valid ISO-8601") from err
+    if parsed.tzinfo is None:
+        raise ValueError("timestamp must include a timezone")
+    return parsed.astimezone(timezone.utc)
+
+
+def validate_news_payload(payload: object) -> dict:
+    """Validate and normalize the published JSON without trusting remote data."""
+    if not isinstance(payload, dict):
+        raise ValueError("news JSON root must be an object")
+    last_update = payload.get("lastUpdate")
+    _parse_timestamp(last_update)
+    raw_articles = payload.get("articles")
+    if not isinstance(raw_articles, list) or not raw_articles:
+        raise ValueError("news JSON must contain a non-empty articles array")
+
+    articles = []
+    for index, raw in enumerate(raw_articles):
+        if not isinstance(raw, dict):
+            raise ValueError(f"article {index} must be an object")
+        title, url, summary = raw.get("title"), raw.get("url"), raw.get("summary")
+        if not all(isinstance(value, str) and value.strip() for value in (title, url, summary)):
+            raise ValueError(f"article {index} has invalid title, url, or summary")
+        if not url.startswith("https://www.gov.pl/"):
+            raise ValueError(f"article {index} URL is not a gov.pl HTTPS URL")
+        raw_date = raw.get("date")
+        if raw_date is not None and not isinstance(raw_date, str):
+            raise ValueError(f"article {index} date must be an ISO date or null")
+        try:
+            article_date = date.fromisoformat(raw_date) if raw_date else None
+        except ValueError as err:
+            raise ValueError(f"article {index} date is not a valid ISO date") from err
+
+        raw_prices = raw.get("prices")
+        if not isinstance(raw_prices, dict):
+            raise ValueError(f"article {index} prices must be an object")
+        prices = {}
+        for key in FUELS:
+            value = raw_prices.get(key)
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise ValueError(f"article {index} price {key} must be numeric")
+            if not isfinite(value) or value <= 0:
+                raise ValueError(f"article {index} price {key} must be finite and positive")
+            prices[key] = round(float(value), 2)
+        articles.append(
+            {
+                "title": title,
+                "url": url,
+                "date": article_date,
+                "summary": summary,
+                "prices": prices,
+            }
+        )
+
+    articles.sort(key=lambda item: item["date"] or date.min, reverse=True)
+    latest = articles[0]
+    return {
+        **latest,
+        "articles": articles,
+        "lastUpdate": _parse_timestamp(last_update),
+    }
 
 
 def split_current(articles: list[dict], today: date) -> tuple[dict | None, dict | None, dict | None]:
@@ -68,54 +112,71 @@ def select_history(articles: list[dict], today: date) -> list[dict]:
     return sorted(chosen, key=lambda a: a["date"])
 
 
-def _clean(text: str) -> str:
-    return " ".join(html.unescape(TAG_RE.sub(" ", text)).split())
-
-
-def parse_articles(page: str) -> list[dict]:
-    """Return fuel price articles found on the news list page (newest first)."""
-    result = []
-    for m in ARTICLE_RE.finditer(page):
-        intro = INTRO_RE.search(m.group("rest"))
-        text = _clean(intro.group("intro")) if intro else ""
-        prices = {}
-        for key, rx in PRICE_RES.items():
-            pm = rx.search(text)
-            if pm:
-                prices[key] = float(pm.group(1).replace(",", "."))
-        if not prices:
-            continue
-        result.append(
-            {
-                "url": BASE_URL + m.group("href"),
-                "date": _parse_date(m.group("href")),
-                "title": _clean(m.group("title")),
-                "summary": text,
-                "prices": prices,
-            }
-        )
-    return result
-
-
 class CpnCoordinator(DataUpdateCoordinator[dict]):
-    """Poll gov.pl for the latest maximum fuel prices."""
+    """Read published fuel-price data, using a one-hour persistent cache."""
 
     def __init__(self, hass: HomeAssistant) -> None:
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
+        self._store = Store(hass, 1, f"{DOMAIN}_news_cache")
+        self._cached_data: dict | None = None
+        self._cached_at: datetime | None = None
+        self._cache_loaded = False
+
+    async def _load_cache(self) -> None:
+        if self._cache_loaded:
+            return
+        self._cache_loaded = True
+        try:
+            stored = await self._store.async_load()
+            if not isinstance(stored, dict):
+                return
+            fetched_at = _parse_timestamp(stored.get("fetched_at"))
+            data = validate_news_payload(stored.get("payload"))
+        except (HomeAssistantError, OSError, TypeError, ValueError) as err:
+            _LOGGER.warning("Lokalny cache CPN jest uszkodzony i zostanie odtworzony: %s", err)
+            return
+        self._cached_at = fetched_at
+        self._cached_data = data
 
     async def _async_update_data(self) -> dict:
-        session = async_get_clientsession(self.hass)
-        try:
-            async with session.get(NEWS_URL, timeout=30) as resp:
-                resp.raise_for_status()
-                page = await resp.text()
-        except Exception as err:
-            raise UpdateFailed(f"Błąd pobierania {NEWS_URL}: {err}") from err
+        await self._load_cache()
+        now = datetime.now(timezone.utc)
+        if (
+            self._cached_data is not None
+            and self._cached_at is not None
+            and timedelta(0) <= now - self._cached_at < timedelta(seconds=CACHE_TTL_SECONDS)
+        ):
+            return self._cached_data
 
-        articles = parse_articles(page)
-        if not articles:
-            if self.data:
-                _LOGGER.warning("Nie znaleziono artykułu z cenami, zachowuję poprzednie dane")
-                return self.data
-            raise UpdateFailed("Nie znaleziono artykułu z maksymalnymi cenami paliw")
-        return {**articles[0], "articles": articles}
+        session = async_get_clientsession(self.hass)
+        last_error: Exception | None = None
+        for attempt in range(3):
+            try:
+                async with session.get(NEWS_JSON_URL, timeout=15) as response:
+                    response.raise_for_status()
+                    payload = json.loads(await response.text())
+                data = validate_news_payload(payload)
+                fetched_at = datetime.now(timezone.utc)
+                try:
+                    await self._store.async_save(
+                        {"fetched_at": fetched_at.isoformat(), "payload": payload}
+                    )
+                except (HomeAssistantError, OSError) as err:
+                    _LOGGER.error("Nie udało się zapisać trwałego cache CPN: %s", err)
+                self._cached_at = fetched_at
+                self._cached_data = data
+                return data
+            except (aiohttp.ClientError, asyncio.TimeoutError, OSError, ValueError) as err:
+                last_error = err
+                _LOGGER.warning(
+                    "Błąd pobierania lub walidacji JSON CPN (próba %d/3): %s",
+                    attempt + 1,
+                    err,
+                )
+            if attempt < 2:
+                await asyncio.sleep(2**attempt)
+
+        if self._cached_data is not None:
+            _LOGGER.warning("Nie udało się odświeżyć danych CPN, używam cache: %s", last_error)
+            return self._cached_data
+        raise UpdateFailed(f"Nie udało się pobrać poprawnych danych z {NEWS_JSON_URL}: {last_error}")

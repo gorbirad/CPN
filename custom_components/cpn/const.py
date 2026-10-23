@@ -1,10 +1,10 @@
 """Constants for the CPN integration."""
 
 DOMAIN = "cpn"
-BASE_URL = "https://www.gov.pl"
-NEWS_URL = "https://www.gov.pl/web/energia/wiadomosci"
-# Co 15 minut, ale w minutach :05/:20/:35/:50, więc 12:05 jest trafiane
+NEWS_JSON_URL = "https://gorbirad.github.io/CPN/news.json"
+# Odświeżanie cache'u HA co 15 minut, w minutach :05/:20/:35/:50.
 REFRESH_MINUTES = (5, 20, 35, 50)
+CACHE_TTL_SECONDS = 60 * 60
 
 FUELS = {
     "pb95": "Benzyna 95",
