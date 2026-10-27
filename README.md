@@ -60,14 +60,15 @@ publishes `news.json` to GitHub Pages. Before its first run, enable Pages in the
 until the first successful publication.
 
 GitHub Actions cron uses UTC and does not support time zones or daylight-saving changes. The cron
-therefore covers the corresponding UTC hours for Polish summer and winter time, while the script
-checks `Europe/Warsaw` local time before requesting gov.pl.
+therefore covers the corresponding UTC hours for Polish summer and winter time. GitHub may delay a
+scheduled run; the scraper does not reject a delayed run based only on the local time, so new prices
+can still be published.
 
 ### Schedule
 
-Checks run every 10 minutes at 12:00, 12:10, 12:20, 12:30, 12:40, 12:50, and 13:00 Poland time.
-Outside this window, the script exits before making a gov.pl request. GitHub may delay scheduled
-workflow starts, so these times are targets, not exact guarantees.
+The workflow is scheduled every 10 minutes around the usual price publication time (using a UTC
+cron schedule). GitHub may delay a scheduled run, so these times are targets, not exact guarantees.
+A delayed run still fetches and publishes the current data.
 
 ### Detecting new prices
 
@@ -327,7 +328,7 @@ CPN/
 ├── scripts/
 │   └── update_news.py           # gov.pl scraper, comparison, and daily lock
 ├── tests/
-│   └── test_update_news.py      # scraper and schedule tests
+│   └── test_update_news.py      # scraper, delayed-run, and lock tests
 ├── news.json                    # generated public feed (created by workflow)
 ├── state.json                   # scraper lock state
 ├── CHANGELOG.md
