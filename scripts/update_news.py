@@ -182,11 +182,6 @@ def read_state(path: Path) -> datetime | None:
         raise ScraperError(f"state.json is corrupt; refusing to query gov.pl: {err}") from err
 
 
-def scheduled_time(now: datetime) -> bool:
-    local_now = now.astimezone(LOCAL_ZONE)
-    return local_now.hour == 12 or (local_now.hour == 13 and local_now.minute == 0)
-
-
 def next_check_time(now: datetime) -> datetime:
     local_now = now.astimezone(LOCAL_ZONE)
     next_day = local_now.date() + timedelta(days=1)
@@ -247,10 +242,6 @@ def update_repository(
     if disabled_until is not None and now_utc < disabled_until:
         _LOGGER.info("Scraper wyłączony do %s; pomijam gov.pl", disabled_until.isoformat())
         return False
-    if not scheduled_time(now):
-        _LOGGER.info("Poza oknem harmonogramu Europe/Warsaw; pomijam gov.pl")
-        return False
-
     previous = None
     if news_path.exists():
         try:

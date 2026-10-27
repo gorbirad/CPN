@@ -81,7 +81,7 @@ class UpdateNewsTests(unittest.TestCase):
             update_news.business_signature(reordered),
         )
 
-    def test_outside_window_does_not_call_fetcher(self):
+    def test_delayed_workflow_run_still_fetches_outside_publication_window(self):
         with tempfile.TemporaryDirectory() as tmp:
             called = False
 
@@ -90,21 +90,12 @@ class UpdateNewsTests(unittest.TestCase):
                 called = True
                 return FIXTURE
 
-            self.assertFalse(
+            self.assertTrue(
                 update_news.update_repository(
-                    Path(tmp), datetime(2026, 10, 23, 9, 40, tzinfo=timezone.utc), fetch
+                    Path(tmp), datetime(2026, 10, 23, 16, 22, tzinfo=timezone.utc), fetch
                 )
             )
-            self.assertFalse(called)
-
-    def test_summer_and_winter_schedule_instants_map_to_noon_warsaw(self):
-        summer = datetime(2026, 7, 1, 10, 10, tzinfo=timezone.utc)
-        winter = datetime(2026, 1, 1, 11, 10, tzinfo=timezone.utc)
-        self.assertTrue(update_news.scheduled_time(summer))
-        self.assertTrue(update_news.scheduled_time(winter))
-        self.assertTrue(
-            update_news.scheduled_time(datetime(2026, 10, 23, 11, 0, tzinfo=timezone.utc))
-        )
+            self.assertTrue(called)
 
     def test_lock_blocks_fetch_until_next_noon_warsaw(self):
         with tempfile.TemporaryDirectory() as tmp:

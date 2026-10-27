@@ -61,14 +61,15 @@ deployment → Source: GitHub Actions**. Workflow wymaga uprawnień `contents: w
 może zwracać 404.
 
 GitHub Actions interpretuje harmonogram cron w UTC i nie obsługuje stref czasowych ani zmiany czasu.
-Dlatego cron obejmuje odpowiednie godziny UTC dla czasu letniego i zimowego, a skrypt dodatkowo
-sprawdza lokalny czas `Europe/Warsaw` przed pobraniem strony.
+Dlatego cron obejmuje odpowiednie godziny UTC dla czasu letniego i zimowego. GitHub może jednak
+uruchomić zadanie z opóźnieniem; scraper nie odrzuca spóźnionego uruchomienia tylko ze względu na
+lokalną godzinę, aby nowe ceny nadal mogły zostać opublikowane.
 
 ### Harmonogram
 
-Sprawdzenia odbywają się co 10 minut: 12:00, 12:10, 12:20, 12:30, 12:40, 12:50 i 13:00 czasu
-polskiego. Poza tym oknem skrypt kończy działanie przed wysłaniem żądania do gov.pl. GitHub może
-opóźnić uruchomienie workflow, więc godziny są orientacyjne, nie gwarantowane co do minuty.
+Workflow jest planowany co 10 minut w okolicy publikacji cen (zgodnie z harmonogramem cron w UTC).
+GitHub może opóźnić uruchomienie, więc godziny są orientacyjne, nie gwarantowane co do minuty.
+Opóźnione zadanie nadal pobiera i publikuje aktualne dane.
 
 ### Wykrywanie nowych cen
 
@@ -330,7 +331,7 @@ CPN/
 ├── scripts/
 │   └── update_news.py           # scraper gov.pl, porównanie danych i blokada
 ├── tests/
-│   └── test_update_news.py      # testy parsera, harmonogramu i blokady
+│   └── test_update_news.py      # testy parsera, opóźnionych uruchomień i blokady
 ├── .gitignore
 ├── news.json                    # dane publikowane przez Pages (tworzy workflow)
 ├── state.json                   # stan blokady scrapera
