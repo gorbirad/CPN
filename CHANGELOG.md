@@ -4,13 +4,17 @@ Historia zmian integracji CPN. Opisy opublikowanych wydań w tym pliku są
 zestawieniem opisów z GitHub Releases; same wydania pozostają dostępne na
 [stronie Releases](https://github.com/gorbirad/CPN/releases).
 
-## [1.1.2] - Unreleased
+## [1.1.5] - Unreleased
+
+- Adaptacyjne odświeżanie: co 5 minut w oknie 11:00–17:00 (Europe/Warsaw), dopóki feed nie zawiera ceny na przyszły dzień; potem TTL jednej godziny.
+- Dodano ręczne uruchamianie workflow (`workflow_dispatch`), także dla zewnętrznego harmonogramu.
+
+## [1.1.2]
 
 - Przy pierwszym imporcie historii używane są ceny z ostatnich 7 dni, a gdy ich brak — z 4 najnowszych artykułów.
 - Migracja ponawia import historii na istniejących wpisach HA po udostępnieniu poprawnego feedu JSON.
 - Nieudany import (brak punktów historycznych) nie jest oznaczany jako zakończony.
 - Po aktualizacji integracji pierwsze pobranie feedu omija cache, aby jednorazowo sprawdzić aktualne dane.
-- Adaptacyjne odświeżanie: co 5 minut w oknie 11:00–17:00 (Europe/Warsaw), dopóki feed nie zawiera ceny na przyszły dzień; potem TTL jednej godziny.
 
 ## [1.1.1] - 2026-10-23
 
