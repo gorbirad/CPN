@@ -59,16 +59,16 @@ publishes `news.json` to GitHub Pages. Before its first run, enable Pages in the
 `contents: write`, `pages: write`, and `id-token: write` permissions. The endpoint may return 404
 until the first successful publication.
 
-GitHub Actions cron uses UTC and does not support time zones or daylight-saving changes. The cron
-therefore covers the corresponding UTC hours for Polish summer and winter time. GitHub may delay a
-scheduled run; the scraper does not reject a delayed run based only on the local time, so new prices
-can still be published.
+GitHub Actions cron uses UTC and does not support time zones or daylight-saving changes. The schedule
+covers UTC hours 10:00–13:50 to span the 12:00–14:00 `Europe/Warsaw` window in both standard and
+daylight time, with some additional runs due to the UTC offset. GitHub may delay a scheduled run; the
+scraper does not reject a delayed run based only on the local time, so new prices can still be published.
 
 ### Schedule
 
-The workflow is scheduled every 10 minutes around the usual price publication time (using a UTC
-cron schedule). GitHub may delay a scheduled run, so these times are targets, not exact guarantees.
-A delayed run still fetches and publishes the current data.
+The workflow is scheduled every 10 minutes during the 12:00–14:00 Polish-time window. Its UTC schedule
+includes extra runs to account for standard and daylight time. GitHub may delay a scheduled run, so
+these times are targets, not exact guarantees. A delayed run still fetches and publishes the current data.
 
 ### Detecting new prices
 

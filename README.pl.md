@@ -61,15 +61,17 @@ deployment → Source: GitHub Actions**. Workflow wymaga uprawnień `contents: w
 może zwracać 404.
 
 GitHub Actions interpretuje harmonogram cron w UTC i nie obsługuje stref czasowych ani zmiany czasu.
-Dlatego cron obejmuje odpowiednie godziny UTC dla czasu letniego i zimowego. GitHub może jednak
-uruchomić zadanie z opóźnieniem; scraper nie odrzuca spóźnionego uruchomienia tylko ze względu na
-lokalną godzinę, aby nowe ceny nadal mogły zostać opublikowane.
+Dlatego harmonogram obejmuje godziny UTC 10:00–13:50, aby pokryć okno 12:00–14:00 czasu
+Europe/Warsaw zarówno zimą, jak i latem (z dodatkowym marginesem wynikającym z różnicy czasu).
+GitHub może uruchomić zadanie z opóźnieniem; scraper nie odrzuca spóźnionego uruchomienia tylko
+ze względu na lokalną godzinę, aby nowe ceny nadal mogły zostać opublikowane.
 
 ### Harmonogram
 
-Workflow jest planowany co 10 minut w okolicy publikacji cen (zgodnie z harmonogramem cron w UTC).
-GitHub może opóźnić uruchomienie, więc godziny są orientacyjne, nie gwarantowane co do minuty.
-Opóźnione zadanie nadal pobiera i publikuje aktualne dane.
+Workflow jest planowany co 10 minut w oknie 12:00–14:00 czasu polskiego. Harmonogram UTC zawiera
+dodatkowe uruchomienia, by obsłużyć czas letni i zimowy. GitHub może opóźnić uruchomienie, więc
+godziny są orientacyjne, nie gwarantowane co do minuty. Opóźnione zadanie nadal pobiera i publikuje
+aktualne dane.
 
 ### Wykrywanie nowych cen
 
