@@ -2,8 +2,8 @@ name: Publish fuel prices
 
 on:
   schedule:
-    # GitHub cron uses UTC; hours 10-13 cover 12:00-14:00 Warsaw time across DST changes.
-    - cron: "0,10,20,30,40,50 10-13 * * *"
+    # GitHub cron uses UTC; this runs every 10 minutes from 08:04 through 14:54 UTC.
+    - cron: "4,14,24,34,44,54 8-14 * * *"
 
 permissions:
   contents: write
