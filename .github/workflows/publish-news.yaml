@@ -4,6 +4,8 @@ on:
   schedule:
     # GitHub cron uses UTC; this runs every 10 minutes from 08:04 through 14:54 UTC.
     - cron: "4,14,24,34,44,54 8-14 * * *"
+  # Manual runs and external schedulers (e.g. cron-job.org via the GitHub API).
+  workflow_dispatch:
 
 permissions:
   contents: write

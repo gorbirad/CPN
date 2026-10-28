@@ -71,6 +71,18 @@ The workflow is scheduled every 10 minutes from 08:04 through 14:54 UTC. These a
 guarantees, because GitHub may delay a scheduled run. A delayed run still fetches and publishes the
 current data.
 
+### Manual and external triggers
+
+The workflow supports `workflow_dispatch`: use **Actions → Publish fuel prices → Run workflow**.
+The same trigger can be called by an external scheduler such as cron-job.org, which is more punctual
+than GitHub's `schedule`:
+
+- `POST https://api.github.com/repos/gorbirad/CPN/actions/workflows/publish-news.yaml/dispatches`
+- Headers: `Authorization: Bearer <token>`, `Accept: application/vnd.github+json`
+- Body: `{"ref": "main"}`
+- Use a fine-grained token limited to this repository with only **Actions: Read and write**.
+  Keep it only in the scheduler; never put it in the integration or the repository.
+
 ### Detecting new prices
 
 The scraper compares the existing JSON with newly parsed articles semantically. It ignores timestamps,
