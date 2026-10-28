@@ -8,6 +8,16 @@ zestawieniem opisów z GitHub Releases; same wydania pozostają dostępne na
 
 - Adaptacyjne odświeżanie: co 5 minut w oknie 11:00–17:00 (Europe/Warsaw), dopóki feed nie zawiera ceny na przyszły dzień; potem TTL jednej godziny.
 - Dodano ręczne uruchamianie workflow (`workflow_dispatch`), także dla zewnętrznego harmonogramu.
+- Harmonogram scrapera: co 10 minut od 08:04 do 14:54 UTC (PR #6).
+
+## [1.1.4] - 2026-10-28
+
+- Rozszerzono harmonogram scrapera do okna 12:00–14:00 Europe/Warsaw, co 10 minut (PR #5).
+- Zaktualizowano dokumentację PL/EN o harmonogram UTC, czas letni/zimowy i opóźnione uruchomienia.
+
+## [1.1.3] - 2026-10-27
+
+- Naprawiono pomijanie opóźnionych uruchomień scrapera: usunięto sztywne ograniczenie do okna 12:00–13:00 Europe/Warsaw. Opóźniony przebieg nadal pobiera i publikuje aktualne ceny, a blokada w `state.json` dalej zapobiega zbędnym zapytaniom (PR #4).
 
 ## [1.1.2]
 
