@@ -2,9 +2,8 @@ name: Publish fuel prices
 
 on:
   schedule:
-    # GitHub cron uses UTC. Both hours cover Warsaw winter (11 UTC) and summer (10 UTC).
-    # update_news.py allows only 12:00-13:00 Europe/Warsaw before making a gov.pl request.
-    - cron: "0,10,20,30,40,50 10,11 * * *"
+    # GitHub cron uses UTC; hours 10-13 cover 12:00-14:00 Warsaw time across DST changes.
+    - cron: "0,10,20,30,40,50 10-13 * * *"
 
 permissions:
   contents: write
