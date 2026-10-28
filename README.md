@@ -100,7 +100,10 @@ gov.pl; repair the file manually to resume.
 
 ### Home Assistant cache
 
-The integration uses Home Assistant's persistent `Store` with a one-hour TTL. A fresh cache is used
+The integration uses Home Assistant's persistent `Store` with an adaptive TTL. Home Assistant checks
+every 5 minutes. Between 11:00 and 17:00 Poland time, while the feed has no article for a future day,
+the TTL is 4 minutes, so new prices are picked up within about 5 minutes of publication. Once the feed
+contains tomorrow's price (or outside that window), the TTL is one hour. A fresh cache is used
 without downloading JSON; after it expires, Home Assistant fetches the feed from GitHub Pages. The
 cache survives restarts. HTTP, network, timeout, and invalid-JSON errors trigger up to three attempts
 with 2- and 4-second backoff. If refresh fails, the integration retains the last valid cached data;

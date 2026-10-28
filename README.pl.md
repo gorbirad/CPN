@@ -89,7 +89,10 @@ bezpieczne przerwanie bez zapytania do gov.pl; plik trzeba wtedy ręcznie napraw
 
 ### Cache w Home Assistant
 
-Integracja używa trwałego magazynu Home Assistant (`Store`) z TTL jednej godziny. Aktualny cache
+Integracja używa trwałego magazynu Home Assistant (`Store`) z adaptacyjnym TTL. HA sprawdza feed
+co 5 minut. W godzinach 11:00–17:00 czasu polskiego, dopóki feed nie zawiera artykułu na przyszły
+dzień, TTL wynosi 4 minuty, więc nowe ceny są pobierane w ok. 5 minut od publikacji. Gdy feed ma już
+cenę na jutro (lub poza tym oknem), TTL wynosi godzinę. Aktualny cache
 jest używany bez pobierania JSON; po wygaśnięciu HA pobiera go ponownie z GitHub Pages. Cache
 przetrwa restart HA. Błędy HTTP, sieci, timeout i niepoprawny JSON powodują do trzech prób
 z backoffem (2 i 4 sekundy). Gdy odświeżenie się nie powiedzie, HA zachowuje ostatnie poprawne dane

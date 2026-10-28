@@ -6,6 +6,7 @@ import json
 import logging
 from datetime import date, datetime, timedelta, timezone
 from math import isfinite
+from zoneinfo import ZoneInfo
 
 import aiohttp
 
@@ -16,9 +17,29 @@ from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .article_history import select_history
-from .const import CACHE_TTL_SECONDS, DOMAIN, FUELS, NEWS_JSON_URL
+from .const import (
+    CACHE_TTL_FAST_SECONDS,
+    CACHE_TTL_SLOW_SECONDS,
+    DOMAIN,
+    FAST_WINDOW_END_HOUR,
+    FAST_WINDOW_START_HOUR,
+    FUELS,
+    NEWS_JSON_URL,
+)
 
 _LOGGER = logging.getLogger(__name__)
+_WARSAW = ZoneInfo("Europe/Warsaw")
+
+
+def cache_ttl_seconds(data: dict, now: datetime) -> int:
+    """Poll fast in the publication window until tomorrow's price is in the feed."""
+    local_now = now.astimezone(_WARSAW)
+    latest = max((a["date"] for a in data["articles"] if a.get("date")), default=None)
+    if latest is not None and latest > local_now.date():
+        return CACHE_TTL_SLOW_SECONDS
+    if FAST_WINDOW_START_HOUR <= local_now.hour < FAST_WINDOW_END_HOUR:
+        return CACHE_TTL_FAST_SECONDS
+    return CACHE_TTL_SLOW_SECONDS
 
 
 def _parse_timestamp(value: object) -> datetime:
@@ -103,7 +124,7 @@ def split_current(articles: list[dict], today: date) -> tuple[dict | None, dict 
 
 
 class CpnCoordinator(DataUpdateCoordinator[dict]):
-    """Read published fuel-price data, using a one-hour persistent cache."""
+    """Read published fuel-price data, using an adaptive persistent cache."""
 
     def __init__(self, hass: HomeAssistant, force_refresh: bool = False) -> None:
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=None)
@@ -137,7 +158,9 @@ class CpnCoordinator(DataUpdateCoordinator[dict]):
             not self._force_refresh
             and self._cached_data is not None
             and self._cached_at is not None
-            and timedelta(0) <= now - self._cached_at < timedelta(seconds=CACHE_TTL_SECONDS)
+            and timedelta(0) <= now - self._cached_at < timedelta(
+                seconds=cache_ttl_seconds(self._cached_data, now)
+            )
         ):
             return self._cached_data
 
