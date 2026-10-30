@@ -43,8 +43,8 @@ ARTICLE_RE = re.compile(
 INTRO_RE = re.compile(r'<div class="intro">(?P<intro>.*?)</div>', re.I | re.S)
 TAG_RE = re.compile(r"<[^>]+>")
 DATE_RE = re.compile(
-    r"obowiazujaca-(?:w-dniach-)?(\d{1,2})(?:-\d{1,2})?-([a-z]+)"
-    r"(?:-\d{1,2}-[a-z]+)?-(\d{4})",
+    r"obowiazujaca-+(?:w-dniach-+)?(\d{1,2})(?:-+\d{1,2})?-+([a-z]+)"
+    r"(?:-+\d{1,2}-+[a-z]+)?-+(\d{4})",
     re.I,
 )
 PRICE_RES = {

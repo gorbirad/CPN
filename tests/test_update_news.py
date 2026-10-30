@@ -72,6 +72,16 @@ class UpdateNewsTests(unittest.TestCase):
         self.assertEqual(articles[0]["date"], "2026-10-24")
         self.assertEqual(articles[0]["prices"], {"pb95": 6.51, "pb98": 7.21, "on": 7.99})
 
+    def test_article_date_handles_range_urls_with_double_hyphen(self):
+        base = "/web/energia/maksymalna-cena-detaliczna-paliw-obowiazujaca-"
+        cases = {
+            "w-dniach-31-pazdziernika--2-listopada-2026-r": date(2026, 10, 31),
+            "w-dniach-24-25-pazdziernika-2026-r": date(2026, 10, 24),
+            "30-pazdziernika-2026-r": date(2026, 10, 30),
+        }
+        for suffix, expected in cases.items():
+            self.assertEqual(update_news.article_date(base + suffix), expected, suffix)
+
     def test_business_signature_ignores_order_and_timestamp(self):
         a = update_news.parse_articles(FIXTURE)[0]
         old = {"lastUpdate": "2026-10-23T10:00:00Z", "articles": [a]}
