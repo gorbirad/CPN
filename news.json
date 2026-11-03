@@ -1,6 +1,17 @@
 {
   "articles": [
     {
+      "date": "2026-11-04",
+      "prices": {
+        "on": 8.05,
+        "pb95": 6.37,
+        "pb98": 7.24
+      },
+      "summary": "Benzyna 95 - 6,37 zł/l, benzyna 98 - 7,24 zł/l, olej napędowy - 8,05 zł/l. Minister Energii podał nowe maksymalne ceny detaliczne paliw obowiązujące 4 listopada 2026 r.",
+      "title": "Maksymalna cena detaliczna paliw obowiązująca 4 listopada 2026 r.",
+      "url": "https://www.gov.pl/web/energia/maksymalna-cena-detaliczna-paliw-obowiazujaca-4-listopada-2026-r"
+    },
+    {
       "date": "2026-11-03",
       "prices": {
         "on": 8.14,
@@ -43,18 +54,7 @@
       "summary": "Benzyna 95 - 6,53 zł/l, benzyna 98 - 7,37 zł/l, olej napędowy - 8,20 zł/l. Minister Energii podał nowe maksymalne ceny detaliczne paliw obowiązujące 29 października 2026 r.",
       "title": "Maksymalna cena detaliczna paliw obowiązująca 29 października 2026 r.",
       "url": "https://www.gov.pl/web/energia/maksymalna-cena-detaliczna-paliw-obowiazujaca-29-pazdziernika-2026-r"
-    },
-    {
-      "date": "2026-10-28",
-      "prices": {
-        "on": 8.28,
-        "pb95": 6.55,
-        "pb98": 7.24
-      },
-      "summary": "Benzyna 95 - 6,55 zł/l, benzyna 98 - 7,24 zł/l, olej napędowy - 8,28 zł/l. Minister Energii podał nowe maksymalne ceny detaliczne paliw obowiązujące 28 października 2026 r.",
-      "title": "Maksymalna cena detaliczna paliw obowiązująca 28 października 2026 r.",
-      "url": "https://www.gov.pl/web/energia/maksymalna-cena-detaliczna-paliw-obowiazujaca-28-pazdziernika-2026-r"
     }
   ],
-  "lastUpdate": "2026-11-02T12:14:23Z"
+  "lastUpdate": "2026-11-03T11:04:19Z"
 }
