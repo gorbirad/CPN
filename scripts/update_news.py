@@ -8,6 +8,7 @@ import logging
 import math
 import os
 import re
+import socket
 import sys
 import tempfile
 import time
@@ -58,6 +59,10 @@ _LOGGER = logging.getLogger("cpn.scraper")
 
 class ScraperError(Exception):
     """Invalid persisted state or source data."""
+
+
+class FetchError(ScraperError):
+    """gov.pl could not be reached (transient network failure)."""
 
 
 def clean_text(value: str) -> str:
@@ -190,6 +195,20 @@ def next_check_time(now: datetime) -> datetime:
     )
 
 
+def _ipv4_only(func: Callable):
+    """Run func with DNS limited to IPv4; GitHub runners often lack IPv6 routes."""
+    original = socket.getaddrinfo
+
+    def getaddrinfo(host, port, family=0, *args, **kwargs):
+        return original(host, port, socket.AF_INET, *args, **kwargs)
+
+    socket.getaddrinfo = getaddrinfo
+    try:
+        return func()
+    finally:
+        socket.getaddrinfo = original
+
+
 def fetch_page() -> str:
     """Fetch gov.pl with bounded retries and request timeout."""
     request = Request(
@@ -199,14 +218,17 @@ def fetch_page() -> str:
     last_error: Exception | None = None
     for attempt in range(3):
         try:
-            with urlopen(request, timeout=20) as response:
-                return response.read().decode("utf-8")
+            def read() -> str:
+                with urlopen(request, timeout=20) as response:
+                    return response.read().decode("utf-8")
+
+            return _ipv4_only(read)
         except (HTTPError, URLError, TimeoutError, OSError) as err:
             last_error = err
             _LOGGER.warning("Błąd pobierania gov.pl (próba %d/3): %s", attempt + 1, err)
             if attempt < 2:
                 time.sleep(2**attempt)
-    raise ScraperError(f"Nie udało się pobrać strony gov.pl: {last_error}")
+    raise FetchError(f"Nie udało się pobrać strony gov.pl: {last_error}")
 
 
 def atomic_write(path: Path, text: str) -> None:
@@ -282,6 +304,10 @@ def main() -> int:
     root = Path(__file__).resolve().parent.parent
     try:
         changed = update_repository(root, datetime.now(timezone.utc))
+    except FetchError as err:
+        # Transient outage: keep existing data and retry on the next scheduled run.
+        _LOGGER.warning("%s; pomijam tę aktualizację", err)
+        changed = False
     except (ScraperError, OSError, ValueError) as err:
         _LOGGER.error("%s", err)
         return 1
