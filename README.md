@@ -59,23 +59,13 @@ publishes `news.json` to GitHub Pages. Before its first run, enable Pages in the
 `contents: write`, `pages: write`, and `id-token: write` permissions. The endpoint may return 404
 until the first successful publication.
 
-GitHub Actions cron uses UTC and does not support time zones or daylight-saving changes. The schedule
-runs at minutes 04, 14, 24, 34, 44, and 54 of UTC hours 08–14 (08:04–14:54 UTC). In `Europe/Warsaw`,
-this corresponds to 09:04–15:54 in standard time and 10:04–16:54 in daylight time. GitHub may delay a
-scheduled run; the scraper does not reject a delayed run based only on the local time, so new prices can
-still be published.
-
-### Schedule
-
-The workflow is scheduled every 10 minutes from 08:04 through 14:54 UTC. These are targets, not exact
-guarantees, because GitHub may delay a scheduled run. A delayed run still fetches and publishes the
-current data.
+The workflow has no built-in GitHub `schedule`; it runs only via `workflow_dispatch`, triggered by an
+external scheduler (cron-job.org). Configure the schedule there (e.g. every 10 minutes, 08:04–14:54 UTC).
 
 ### Manual and external triggers
 
 The workflow supports `workflow_dispatch`: use **Actions → Publish fuel prices → Run workflow**.
-The same trigger can be called by an external scheduler such as cron-job.org, which is more punctual
-than GitHub's `schedule`:
+The same trigger is called by the external scheduler (cron-job.org):
 
 - `POST https://api.github.com/repos/gorbirad/CPN/actions/workflows/publish-news.yaml/dispatches`
 - Headers: `Authorization: Bearer <token>`, `Accept: application/vnd.github+json`

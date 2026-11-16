@@ -60,17 +60,9 @@ deployment → Source: GitHub Actions**. Workflow wymaga uprawnień `contents: w
 `id-token: write`. Pierwszy poprawny przebieg utworzy plik i opublikuje endpoint; do tego czasu endpoint
 może zwracać 404.
 
-GitHub Actions interpretuje harmonogram cron w UTC i nie obsługuje stref czasowych ani zmiany czasu.
-Zadanie uruchamia się o minutach 04, 14, 24, 34, 44 i 54 w godzinach UTC 08–14 (08:04–14:54 UTC).
-W strefie Europe/Warsaw odpowiada to godzinom 09:04–15:54 zimą i 10:04–16:54 latem.
-GitHub może uruchomić zadanie z opóźnieniem; scraper nie odrzuca spóźnionego uruchomienia tylko
-ze względu na lokalną godzinę, aby nowe ceny nadal mogły zostać opublikowane.
-
-### Harmonogram
-
-Workflow jest planowany co 10 minut od 08:04 do 14:54 UTC. Godziny są orientacyjne, nie gwarantowane
-co do minuty, ponieważ GitHub może opóźnić uruchomienie. Opóźnione zadanie nadal pobiera i publikuje
-aktualne dane.
+Workflow nie ma wbudowanego harmonogramu GitHub (`schedule`); uruchamia się tylko przez
+`workflow_dispatch`, wywoływany przez zewnętrzny scheduler (cron-job.org). Harmonogram (np. co 10 minut,
+08:04–14:54 UTC) ustaw tam.
 
 ### Wykrywanie nowych cen
 
