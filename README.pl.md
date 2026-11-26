@@ -25,9 +25,10 @@ Pełna historia zmian znajduje się w [CHANGELOG.md](CHANGELOG.md); opisy wydań
 gov.pl → GitHub Actions (scraper) → news.json → GitHub Pages → integracje CPN w HA
 ```
 
-Jedno centralne zadanie sprawdza stronę wiadomości gov.pl przy każdym wywołaniu przez zewnętrzny
-harmonogram. Po wykryciu nowego artykułu z cenami od razu publikuje JSON. Home Assistant nie zna
-adresu strony gov.pl i nie wysyła tam żadnych zapytań.
+Jedno centralne zadanie sprawdza stronę wiadomości gov.pl przy wywołaniach zewnętrznego
+harmonogramu, dopóki opublikowany feed nie zawiera cen na przyszły dzień. Po ich wykryciu od razu
+publikuje JSON i pomija dalsze zapytania do gov.pl tego dnia. Home Assistant nie zna adresu strony
+gov.pl i nie wysyła tam żadnych zapytań.
 
 ### Publiczny endpoint JSON
 

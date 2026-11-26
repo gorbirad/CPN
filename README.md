@@ -25,8 +25,10 @@ on [GitHub Releases](https://github.com/gorbirad/CPN/releases).
 gov.pl → GitHub Actions (scraper) → news.json → GitHub Pages → CPN integrations in Home Assistant
 ```
 
-One central job checks the gov.pl news page each time the external scheduler invokes it. When it
-finds new price data, it publishes JSON immediately. Home Assistant does not request the gov.pl page.
+One central job checks the gov.pl news page when the external scheduler invokes it, until the
+published feed contains prices effective on a future day. After detecting them, it publishes the
+JSON immediately and skips further gov.pl requests that day. Home Assistant does not request the
+gov.pl page.
 
 ### Public JSON endpoint
 

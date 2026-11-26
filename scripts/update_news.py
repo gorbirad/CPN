@@ -17,8 +17,10 @@ from pathlib import Path
 from typing import Callable
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+from zoneinfo import ZoneInfo
 
 NEWS_URL = "https://www.gov.pl/web/energia/wiadomosci"
+LOCAL_ZONE = ZoneInfo("Europe/Warsaw")
 FUEL_KEYS = ("pb95", "pb98", "on")
 MONTHS = {
     "stycznia": 1,
@@ -165,6 +167,15 @@ def business_signature(payload: dict) -> tuple:
     return tuple(sorted(records))
 
 
+def has_future_article(payload: dict, today: date) -> bool:
+    """Return whether the feed already contains prices effective after today."""
+    return any(
+        article.get("date") is not None
+        and date.fromisoformat(article["date"]) > today
+        for article in payload["articles"]
+    )
+
+
 def _ipv4_only(func: Callable):
     """Run func with DNS limited to IPv4; GitHub runners often lack IPv6 routes."""
     original = socket.getaddrinfo
@@ -235,6 +246,11 @@ def update_repository(
             previous = validate_news(json.loads(news_path.read_text(encoding="utf-8")))
         except (OSError, json.JSONDecodeError, ScraperError) as err:
             raise ScraperError(f"news.json is corrupt; refusing to replace it: {err}") from err
+        if has_future_article(previous, now.astimezone(LOCAL_ZONE).date()):
+            _LOGGER.info(
+                "news.json zawiera już ceny na kolejny dzień; pomijam sprawdzanie gov.pl"
+            )
+            return False
 
     page = page_fetcher()
     articles = parse_articles(page)

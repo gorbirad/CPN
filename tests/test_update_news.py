@@ -123,6 +123,62 @@ class UpdateNewsTests(unittest.TestCase):
             self.assertTrue(update_news.update_repository(root, scheduled_now(), fetch))
             self.assertTrue(called)
 
+    def test_future_article_blocks_fetch_for_rest_of_day(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            root.joinpath("news.json").write_text(
+                json.dumps(
+                    {
+                        "lastUpdate": "2026-10-23T10:00:00Z",
+                        "articles": update_news.parse_articles(FIXTURE),
+                    }
+                ),
+                encoding="utf-8",
+            )
+            called = False
+
+            def fetch():
+                nonlocal called
+                called = True
+                return FIXTURE
+
+            self.assertFalse(
+                update_news.update_repository(
+                    root, datetime(2026, 10, 23, 18, 0, tzinfo=timezone.utc), fetch
+                )
+            )
+            self.assertFalse(called)
+
+    def test_current_article_does_not_block_later_fetch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            current = FIXTURE.replace(
+                "obowiazujaca-w-dniach-24-26-pazdziernika-2026-r",
+                "obowiazujaca-23-pazdziernika-2026-r",
+            )
+            root.joinpath("news.json").write_text(
+                json.dumps(
+                    {
+                        "lastUpdate": "2026-10-23T10:00:00Z",
+                        "articles": update_news.parse_articles(current),
+                    }
+                ),
+                encoding="utf-8",
+            )
+            called = False
+
+            def fetch():
+                nonlocal called
+                called = True
+                return FIXTURE
+
+            self.assertTrue(
+                update_news.update_repository(
+                    root, datetime(2026, 10, 23, 10, 30, tzinfo=timezone.utc), fetch
+                )
+            )
+            self.assertTrue(called)
+
     def test_corrupt_legacy_state_does_not_block_fetch(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -157,7 +213,12 @@ class UpdateNewsTests(unittest.TestCase):
     def test_changed_price_updates_json(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            article = update_news.parse_articles(FIXTURE)[0]
+            article = update_news.parse_articles(
+                FIXTURE.replace(
+                    "obowiazujaca-w-dniach-24-26-pazdziernika-2026-r",
+                    "obowiazujaca-23-pazdziernika-2026-r",
+                )
+            )[0]
             root.joinpath("news.json").write_text(
                 json.dumps(
                     {
