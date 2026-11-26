@@ -12,15 +12,13 @@ import socket
 import sys
 import tempfile
 import time
-from datetime import date, datetime, time as datetime_time, timedelta, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Callable
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
-from zoneinfo import ZoneInfo
 
 NEWS_URL = "https://www.gov.pl/web/energia/wiadomosci"
-LOCAL_ZONE = ZoneInfo("Europe/Warsaw")
 FUEL_KEYS = ("pb95", "pb98", "on")
 MONTHS = {
     "stycznia": 1,
@@ -167,34 +165,6 @@ def business_signature(payload: dict) -> tuple:
     return tuple(sorted(records))
 
 
-def read_state(path: Path) -> datetime | None:
-    if not path.exists():
-        return None
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-        if not isinstance(data, dict) or "disabledUntil" not in data:
-            raise ValueError("state root must be an object containing disabledUntil")
-        until = data["disabledUntil"]
-        if until is None:
-            return None
-        if not isinstance(until, str):
-            raise ValueError("disabledUntil must be an ISO-8601 string or null")
-        parsed = datetime.fromisoformat(until.replace("Z", "+00:00"))
-        if parsed.tzinfo is None:
-            raise ValueError("disabledUntil must include a timezone")
-        return parsed.astimezone(timezone.utc)
-    except (OSError, json.JSONDecodeError, ValueError) as err:
-        raise ScraperError(f"state.json is corrupt; refusing to query gov.pl: {err}") from err
-
-
-def next_check_time(now: datetime) -> datetime:
-    local_now = now.astimezone(LOCAL_ZONE)
-    next_day = local_now.date() + timedelta(days=1)
-    return datetime.combine(next_day, datetime_time(12, 0), tzinfo=LOCAL_ZONE).astimezone(
-        timezone.utc
-    )
-
-
 def _ipv4_only(func: Callable):
     """Run func with DNS limited to IPv4; GitHub runners often lack IPv6 routes."""
     original = socket.getaddrinfo
@@ -253,17 +223,12 @@ def update_repository(
     now: datetime,
     page_fetcher: Callable[[], str] = fetch_page,
 ) -> bool:
-    """Update news and lock files only when article/pricing data changes."""
+    """Update the news file only when article/pricing data changes."""
     if now.tzinfo is None:
         raise ValueError("now must be timezone-aware")
     now_utc = now.astimezone(timezone.utc)
-    state_path = root / "state.json"
     news_path = root / "news.json"
 
-    disabled_until = read_state(state_path)
-    if disabled_until is not None and now_utc < disabled_until:
-        _LOGGER.info("Scraper wyłączony do %s; pomijam gov.pl", disabled_until.isoformat())
-        return False
     previous = None
     if news_path.exists():
         try:
@@ -284,18 +249,11 @@ def update_repository(
         _LOGGER.info("Dane biznesowe nie zmieniły się; pomijam zapis i commit")
         return False
 
-    next_check = next_check_time(now)
-    state = {"disabledUntil": next_check.isoformat(timespec="seconds").replace("+00:00", "Z")}
     atomic_write(
         news_path,
         json.dumps(candidate, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
     )
-    atomic_write(state_path, json.dumps(state, indent=2) + "\n")
-    _LOGGER.info(
-        "Zapisano %d artykułów; dalsze sprawdzanie wyłączone do %s",
-        len(articles),
-        state["disabledUntil"],
-    )
+    _LOGGER.info("Zapisano %d artykułów", len(articles))
     return True
 
 

@@ -107,7 +107,7 @@ class UpdateNewsTests(unittest.TestCase):
             )
             self.assertTrue(called)
 
-    def test_lock_blocks_fetch_until_next_noon_warsaw(self):
+    def test_legacy_lock_does_not_block_fetch(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             root.joinpath("state.json").write_text(
@@ -120,33 +120,26 @@ class UpdateNewsTests(unittest.TestCase):
                 called = True
                 return FIXTURE
 
-            self.assertFalse(update_news.update_repository(root, scheduled_now(), fetch))
-            self.assertFalse(called)
+            self.assertTrue(update_news.update_repository(root, scheduled_now(), fetch))
+            self.assertTrue(called)
 
-    def test_corrupt_state_fails_closed_before_fetch(self):
+    def test_corrupt_legacy_state_does_not_block_fetch(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             root.joinpath("state.json").write_text("{broken", encoding="utf-8")
-            with self.assertRaises(update_news.ScraperError):
-                update_news.update_repository(root, scheduled_now(), lambda: self.fail("fetched"))
+            self.assertTrue(
+                update_news.update_repository(root, scheduled_now(), lambda: FIXTURE)
+            )
 
-    def test_state_with_wrong_json_shape_fails_closed(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            root.joinpath("state.json").write_text("[]", encoding="utf-8")
-            with self.assertRaises(update_news.ScraperError):
-                update_news.update_repository(root, scheduled_now(), lambda: self.fail("fetched"))
-
-    def test_changed_data_updates_news_and_lock(self):
+    def test_changed_data_updates_news_without_creating_lock(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             self.assertTrue(update_news.update_repository(root, scheduled_now(), lambda: FIXTURE))
             news = json.loads(root.joinpath("news.json").read_text(encoding="utf-8"))
-            state = json.loads(root.joinpath("state.json").read_text(encoding="utf-8"))
             self.assertEqual(news["articles"][0]["date"], "2026-10-24")
-            self.assertEqual(state["disabledUntil"], "2026-10-24T10:00:00Z")
+            self.assertFalse(root.joinpath("state.json").exists())
 
-    def test_unchanged_business_data_does_not_rewrite_or_lock(self):
+    def test_unchanged_business_data_does_not_rewrite(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             root.joinpath("news.json").write_text(
@@ -161,7 +154,7 @@ class UpdateNewsTests(unittest.TestCase):
             self.assertFalse(update_news.update_repository(root, scheduled_now(), lambda: FIXTURE))
             self.assertFalse(root.joinpath("state.json").exists())
 
-    def test_changed_price_updates_json_and_lock(self):
+    def test_changed_price_updates_json(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             article = update_news.parse_articles(FIXTURE)[0]

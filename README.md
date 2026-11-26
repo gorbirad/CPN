@@ -25,8 +25,8 @@ on [GitHub Releases](https://github.com/gorbirad/CPN/releases).
 gov.pl → GitHub Actions (scraper) → news.json → GitHub Pages → CPN integrations in Home Assistant
 ```
 
-One central job checks the gov.pl news page during the price-publication window. When it finds new
-price data, it publishes JSON. Home Assistant does not request the gov.pl page.
+One central job checks the gov.pl news page each time the external scheduler invokes it. When it
+finds new price data, it publishes JSON immediately. Home Assistant does not request the gov.pl page.
 
 ### Public JSON endpoint
 
@@ -79,14 +79,6 @@ The scraper compares the existing JSON with newly parsed articles semantically. 
 JSON formatting, and article ordering. A price change or a changed set of articles (an article added
 or removed) counts as a data change. If the business data is identical, the scraper does not rewrite
 `news.json`, create a commit, or redeploy Pages.
-
-### Lock after new prices are published
-
-After detecting changed data, the scraper sets `disabledUntil` in `state.json` to 12:00 the next day
-in `Europe/Warsaw` (stored in UTC). Subsequent scheduled runs read this state and exit before
-contacting gov.pl until that time. If there are no new prices, the lock is not extended and the next
-scheduled check runs normally. If `state.json` is corrupt, the scraper fails closed without contacting
-gov.pl; repair the file manually to resume.
 
 ### Home Assistant cache
 
@@ -334,9 +326,8 @@ CPN/
 ├── scripts/
 │   └── update_news.py           # gov.pl scraper, comparison, and daily lock
 ├── tests/
-│   └── test_update_news.py      # scraper, delayed-run, and lock tests
+│   └── test_update_news.py      # scraper and delayed-run tests
 ├── news.json                    # generated public feed (created by workflow)
-├── state.json                   # scraper lock state
 ├── CHANGELOG.md
 ├── hacs.json
 ├── LICENSE

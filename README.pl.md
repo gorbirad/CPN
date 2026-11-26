@@ -25,9 +25,9 @@ Pełna historia zmian znajduje się w [CHANGELOG.md](CHANGELOG.md); opisy wydań
 gov.pl → GitHub Actions (scraper) → news.json → GitHub Pages → integracje CPN w HA
 ```
 
-Jedno centralne zadanie sprawdza stronę wiadomości gov.pl tylko w wyznaczonym oknie publikacji.
-Po wykryciu nowego artykułu z cenami publikuje JSON. Home Assistant nie zna adresu strony gov.pl
-i nie wysyła tam żadnych zapytań.
+Jedno centralne zadanie sprawdza stronę wiadomości gov.pl przy każdym wywołaniu przez zewnętrzny
+harmonogram. Po wykryciu nowego artykułu z cenami od razu publikuje JSON. Home Assistant nie zna
+adresu strony gov.pl i nie wysyła tam żadnych zapytań.
 
 ### Publiczny endpoint JSON
 
@@ -70,14 +70,6 @@ Scraper porównuje istniejący JSON z pobranymi artykułami semantycznie. Ignoru
 formatowanie JSON i kolejność artykułów. Za zmianę uznaje zmianę ceny albo zmianę zestawu artykułów
 (nowy lub usunięty wpis). Jeśli dane biznesowe są identyczne, nie nadpisuje `news.json`, nie tworzy
 commita i nie wdraża ponownie Pages.
-
-### Mechanizm blokady po publikacji cen
-
-Po wykryciu zmiany scraper zapisuje w `state.json` `disabledUntil` ustawione na 12:00 następnego
-dnia w strefie `Europe/Warsaw` (wartość zapisana w UTC). Kolejne zadania odczytują stan i kończą się
-przed kontaktem z gov.pl aż do tej chwili. Jeżeli nie ma nowych cen, blokada nie jest przedłużana,
-więc kolejne zaplanowane sprawdzenia normalnie się odbywają. Uszkodzony `state.json` powoduje
-bezpieczne przerwanie bez zapytania do gov.pl; plik trzeba wtedy ręcznie naprawić.
 
 ### Cache w Home Assistant
 
@@ -325,12 +317,11 @@ CPN/
 │           ├── en.json
 │           └── pl.json
 ├── scripts/
-│   └── update_news.py           # scraper gov.pl, porównanie danych i blokada
+│   └── update_news.py           # scraper gov.pl i porównanie danych
 ├── tests/
-│   └── test_update_news.py      # testy parsera, opóźnionych uruchomień i blokady
+│   └── test_update_news.py      # testy parsera i opóźnionych uruchomień
 ├── .gitignore
 ├── news.json                    # dane publikowane przez Pages (tworzy workflow)
-├── state.json                   # stan blokady scrapera
 ├── hacs.json                    # metadane HACS
 └── README.md
 ```

@@ -9,6 +9,7 @@ zestawieniem opisów z GitHub Releases; same wydania pozostają dostępne na
 - Adaptacyjne odświeżanie: co 5 minut w oknie 11:00–17:00 (Europe/Warsaw), dopóki feed nie zawiera ceny na przyszły dzień; potem TTL jednej godziny.
 - Dodano ręczne uruchamianie workflow (`workflow_dispatch`), także dla zewnętrznego harmonogramu.
 - Harmonogram scrapera: co 10 minut od 08:04 do 14:54 UTC (PR #6).
+- Usunięto blokadę `state.json`, która pomijała późniejsze publikacje cen. Każde zaplanowane uruchomienie teraz ponownie sprawdza gov.pl i od razu publikuje zmianę.
 
 ## [1.1.4] - 2026-10-28
 
