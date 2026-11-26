@@ -91,6 +91,60 @@ class UpdateNewsTests(unittest.TestCase):
             update_news.business_signature(reordered),
         )
 
+    def test_publication_needed_when_pages_feed_is_stale(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            news_path = Path(tmp) / "news.json"
+            local = {
+                "lastUpdate": "2026-10-23T10:10:00Z",
+                "articles": update_news.parse_articles(FIXTURE),
+            }
+            news_path.write_text(json.dumps(local), encoding="utf-8")
+            stale = {
+                "lastUpdate": "2026-10-22T10:10:00Z",
+                "articles": update_news.parse_articles(
+                    FIXTURE.replace("6,51", "6,50")
+                ),
+            }
+            self.assertTrue(
+                update_news.publication_needed(news_path, lambda: stale)
+            )
+
+    def test_publication_not_needed_when_pages_has_same_business_data(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            news_path = Path(tmp) / "news.json"
+            local = {
+                "lastUpdate": "2026-10-23T10:10:00Z",
+                "articles": update_news.parse_articles(FIXTURE),
+            }
+            news_path.write_text(json.dumps(local), encoding="utf-8")
+            published = {
+                "lastUpdate": "2026-10-23T09:00:00Z",
+                "articles": list(reversed(local["articles"])),
+            }
+            self.assertFalse(
+                update_news.publication_needed(news_path, lambda: published)
+            )
+
+    def test_publication_needed_when_pages_feed_is_unavailable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            news_path = Path(tmp) / "news.json"
+            news_path.write_text(
+                json.dumps(
+                    {
+                        "lastUpdate": "2026-10-23T10:10:00Z",
+                        "articles": update_news.parse_articles(FIXTURE),
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            def unavailable():
+                raise update_news.FetchError("offline")
+
+            self.assertTrue(
+                update_news.publication_needed(news_path, unavailable)
+            )
+
     def test_delayed_workflow_run_still_fetches_outside_publication_window(self):
         with tempfile.TemporaryDirectory() as tmp:
             called = False

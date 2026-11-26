@@ -20,6 +20,7 @@ from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
 NEWS_URL = "https://www.gov.pl/web/energia/wiadomosci"
+PUBLISHED_NEWS_URL = "https://gorbirad.github.io/CPN/news.json"
 LOCAL_ZONE = ZoneInfo("Europe/Warsaw")
 FUEL_KEYS = ("pb95", "pb98", "on")
 MONTHS = {
@@ -212,6 +213,41 @@ def fetch_page() -> str:
     raise FetchError(f"Nie udało się pobrać strony gov.pl: {last_error}")
 
 
+def fetch_published_news() -> dict:
+    """Fetch and validate the currently deployed GitHub Pages feed."""
+    request = Request(PUBLISHED_NEWS_URL, headers={"User-Agent": "CPN-Publisher/1.0"})
+    try:
+        with urlopen(request, timeout=20) as response:
+            return validate_news(json.loads(response.read().decode("utf-8")))
+    except (
+        HTTPError,
+        URLError,
+        TimeoutError,
+        OSError,
+        UnicodeDecodeError,
+        json.JSONDecodeError,
+        ScraperError,
+    ) as err:
+        raise FetchError(f"Nie udało się pobrać opublikowanego news.json: {err}") from err
+
+
+def publication_needed(
+    news_path: Path,
+    published_fetcher: Callable[[], dict] = fetch_published_news,
+) -> bool:
+    """Return whether the checked-in feed must be deployed to GitHub Pages."""
+    local = validate_news(json.loads(news_path.read_text(encoding="utf-8")))
+    try:
+        published = published_fetcher()
+    except FetchError as err:
+        _LOGGER.warning("%s; ponawiam publikację", err)
+        return True
+    needed = business_signature(local) != business_signature(published)
+    if not needed:
+        _LOGGER.info("GitHub Pages zawiera już bieżące dane biznesowe")
+    return needed
+
+
 def atomic_write(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temp_name = None
@@ -285,10 +321,18 @@ def main() -> int:
     except (ScraperError, OSError, ValueError) as err:
         _LOGGER.error("%s", err)
         return 1
+    publish = changed
+    if not publish and (Path(__file__).resolve().parent.parent / "news.json").exists():
+        try:
+            publish = publication_needed(Path(__file__).resolve().parent.parent / "news.json")
+        except (OSError, json.JSONDecodeError, ScraperError) as err:
+            _LOGGER.error("Nie można porównać pliku z GitHub Pages: %s", err)
+            return 1
     output_path = os.environ.get("GITHUB_OUTPUT")
     if output_path:
         with open(output_path, "a", encoding="utf-8") as output:
             output.write(f"changed={'true' if changed else 'false'}\n")
+            output.write(f"publish={'true' if publish else 'false'}\n")
     return 0
 
 

@@ -70,7 +70,9 @@ Workflow nie ma wbudowanego harmonogramu GitHub (`schedule`); uruchamia się tyl
 Scraper porównuje istniejący JSON z pobranymi artykułami semantycznie. Ignoruje timestamp,
 formatowanie JSON i kolejność artykułów. Za zmianę uznaje zmianę ceny albo zmianę zestawu artykułów
 (nowy lub usunięty wpis). Jeśli dane biznesowe są identyczne, nie nadpisuje `news.json`, nie tworzy
-commita i nie wdraża ponownie Pages.
+commita. Przed pominięciem publikacji porównuje jeszcze repozytoryjny JSON z publicznym endpointem
+Pages; jeżeli endpoint jest nieaktualny lub niedostępny, ponawia jego wdrożenie bez ponownego
+odpytywania gov.pl.
 
 ### Cache w Home Assistant
 

@@ -35,19 +35,19 @@ jobs:
         run: python scripts/update_news.py
 
       - name: Prepare Pages artifact
-        if: steps.scraper.outputs.changed == 'true'
+        if: steps.scraper.outputs.publish == 'true'
         run: |
           mkdir -p _site
           cp news.json _site/news.json
 
       - name: Upload Pages artifact
-        if: steps.scraper.outputs.changed == 'true'
+        if: steps.scraper.outputs.publish == 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: _site
 
       - name: Deploy to GitHub Pages
-        if: steps.scraper.outputs.changed == 'true'
+        if: steps.scraper.outputs.publish == 'true'
         id: deployment
         uses: actions/deploy-pages@v4
 

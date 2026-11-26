@@ -80,7 +80,9 @@ The same trigger is called by the external scheduler (cron-job.org):
 The scraper compares the existing JSON with newly parsed articles semantically. It ignores timestamps,
 JSON formatting, and article ordering. A price change or a changed set of articles (an article added
 or removed) counts as a data change. If the business data is identical, the scraper does not rewrite
-`news.json`, create a commit, or redeploy Pages.
+`news.json` or create a commit. Before skipping deployment, it compares the repository JSON with the
+public Pages endpoint; if the endpoint is stale or unavailable, it is redeployed without querying
+gov.pl again.
 
 ### Home Assistant cache
 
